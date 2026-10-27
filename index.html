@@ -328,7 +328,7 @@
                                 <p class="text-[11px] text-slate-500">Pilih periode laporan Bulanan atau Semesteran. (Tekan <b>CTRL + Z</b> untuk Undo hapus)</p>
                             </div>
                             <div class="flex gap-2 flex-wrap">
-                                <button type="button" onclick="openManualAddAparModal()" class="bg-emerald-600 hover:bg-emerald-700 text-white px-3 py-2 rounded-xl text-xs font-semibold transition shadow whitespace-nowrap">➕ Tambah Data</button>
+                                <button type="button" onclick="openManualAddAparModal()" class="bg-emerald-600 hover:bg-emerald-700 text-white px-3 py-2 rounded-xl text-xs font-semibold transition shadow whitespace-nowrap">➕ Tambah Inspeksi</button>
                                 <button type="button" onclick="loadReportData(true)" class="bg-slate-900 hover:bg-black text-white px-3 py-2 rounded-xl text-xs font-semibold transition shadow whitespace-nowrap">Muat Ulang</button>
                                 <button type="button" onclick="window.print()" class="bg-red-600 hover:bg-red-700 text-white px-3 py-2 rounded-xl text-xs font-semibold transition shadow whitespace-nowrap">🖨️ Cetak PDF</button>
                             </div>
@@ -442,7 +442,7 @@
                 <!-- MODUL PROFIL, LABEL QR & PETA (ADMIN) -->
                 <div id="tabAparQrCode" class="hidden space-y-4">
                     <div class="flex gap-2 no-print bg-white p-3 rounded-2xl shadow-lg border overflow-x-auto">
-                        <button onclick="switchQrSubTab('table')" id="btnQrSubTable" class="bg-red-700 hover:bg-red-800 text-white px-3.5 py-2 rounded-xl text-xs font-semibold whitespace-nowrap transition shadow-sm">📋 Master APAR</button>
+                        <button onclick="switchQrSubTab('table')" id="btnQrSubTable" class="bg-red-700 hover:bg-red-800 text-white px-3.5 py-2 rounded-xl text-xs font-semibold whitespace-nowrap transition shadow-sm">📋 Master Profil APAR (97 Unit)</button>
                         <button onclick="switchQrSubTab('backupTable')" id="btnQrSubBackupTable" class="bg-slate-100 hover:bg-slate-200 text-slate-700 px-3.5 py-2 rounded-xl text-xs font-semibold whitespace-nowrap transition border">📋 APAR Cadangan</button>
                         <button onclick="switchQrSubTab('cards')" id="btnQrSubCards" class="bg-slate-100 hover:bg-slate-200 text-slate-700 px-3.5 py-2 rounded-xl text-xs font-semibold whitespace-nowrap transition border">🏷️ Cetak QR</button>
                     </div>
@@ -453,12 +453,15 @@
                             <div class="flex flex-wrap justify-between items-center gap-2 border-b pb-3">
                                 <div>
                                     <h3 class="font-bold text-slate-900 text-sm md:text-base">Tabel Master Profil & Spesifikasi APAR</h3>
-                                    <p class="text-[11px] text-slate-500">Perubahan otomatis tersinkron ke Kartu QR & Peta Cloud.</p>
+                                    <p class="text-[11px] text-slate-500">Edit, tambah, hapus profil APAR dan kirim titik ke peta secara satuan di sini.</p>
                                 </div>
-                                <input type="text" id="searchAparProfile" oninput="filterAparTableProfile()" placeholder="Cari Kode / Lokasi..." class="px-3.5 py-2 border rounded-xl text-xs w-full md:w-48 shadow-sm focus:ring-2 focus:ring-red-500 outline-none">
+                                <div class="flex gap-2 items-center flex-wrap w-full md:w-auto">
+                                    <input type="text" id="searchAparProfile" oninput="filterAparTableProfile()" placeholder="Cari Kode / Lokasi..." class="px-3.5 py-2 border rounded-xl text-xs w-full md:w-48 shadow-sm focus:ring-2 focus:ring-red-500 outline-none">
+                                    <button type="button" onclick="openAddMasterAparModal()" class="bg-emerald-600 hover:bg-emerald-700 text-white px-3.5 py-2 rounded-xl text-xs font-semibold transition shadow whitespace-nowrap">➕ Tambah Master APAR</button>
+                                </div>
                             </div>
-                            <div class="table-container max-h-[400px] rounded-xl border">
-                                <table class="w-full text-center text-xs border-collapse min-w-[650px]">
+                            <div class="table-container max-h-[450px] rounded-xl border">
+                                <table class="w-full text-center text-xs border-collapse min-w-[750px]">
                                     <thead class="sticky top-0 bg-slate-900 text-white z-10">
                                         <tr>
                                             <th class="p-2.5 border-b border-slate-700">No.</th>
@@ -468,7 +471,7 @@
                                             <th class="p-2.5 border-b border-slate-700">Kapasitas</th>
                                             <th class="p-2.5 border-b border-slate-700">Tekanan</th>
                                             <th class="p-2.5 border-b border-slate-700">Exp</th>
-                                            <th class="p-2.5 border-b border-slate-700 no-print">Aksi</th>
+                                            <th class="p-2.5 border-b border-slate-700 no-print">Aksi & Transfer Peta</th>
                                         </tr>
                                     </thead>
                                     <tbody id="aparProfileTableBody"></tbody>
@@ -490,14 +493,10 @@
                                 </div>
                             </div>
 
-                            <!-- KONTROL TOMBOL TAMBAH, EDIT NOMOR, HAPUS, & SIMPAN -->
-                            <div id="adminEditToolsContainer" class="hidden flex items-center gap-2 flex-wrap bg-slate-50 p-3 rounded-xl border shadow-inner">
-                                <span class="text-xs font-bold text-slate-700">🛠️ Aksi Edit:</span>
-                                <button type="button" onclick="addNewAparMarker()" class="bg-blue-600 hover:bg-blue-700 text-white px-3 py-2 rounded-xl text-xs font-semibold transition shadow whitespace-nowrap">➕ Tambah Titik APAR</button>
-                                <button type="button" onclick="editActiveMarkerNumber()" class="bg-indigo-600 hover:bg-indigo-700 text-white px-3 py-2 rounded-xl text-xs font-semibold transition shadow whitespace-nowrap">✏️ Edit Nomor Titik</button>
-                                <button type="button" id="toggleMultiSelectBtn" onclick="toggleMultiSelectMode()" class="bg-slate-700 hover:bg-slate-800 text-white px-3 py-2 rounded-xl text-xs font-semibold transition shadow whitespace-nowrap">☑️ Pilih Titik</button>
-                                <button type="button" onclick="deleteActiveMarker()" class="bg-red-600 hover:bg-red-700 text-white px-3 py-2 rounded-xl text-xs font-semibold transition shadow whitespace-nowrap">🗑️ Hapus Titik</button>
-                                <button type="button" onclick="saveMapPositions()" class="bg-emerald-600 hover:bg-emerald-700 text-white px-3 py-2 rounded-xl text-xs font-semibold transition shadow whitespace-nowrap">💾 Simpan Peta Ke Cloud</button>
+                            <!-- KONTROL TOMBOL SIMPAN PETA -->
+                            <div id="adminEditToolsContainer" class="hidden flex items-center justify-between flex-wrap gap-2 bg-slate-50 p-3 rounded-xl border shadow-inner">
+                                <span class="text-xs font-bold text-slate-700">🛠️ Peta Aktif: Geser titik APAR sesuai posisi di pabrik lalu simpan ke Cloud.</span>
+                                <button type="button" onclick="saveMapPositions()" class="bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 rounded-xl text-xs font-semibold transition shadow whitespace-nowrap">💾 Simpan Posisi Peta Ke Cloud</button>
                             </div>
 
                             <div class="relative w-full overflow-auto border border-slate-800 rounded-2xl bg-slate-900 p-2 min-h-[450px] flex items-center justify-center shadow-inner">
@@ -968,6 +967,60 @@
         </div>
     </div>
 
+    <!-- MODAL TAMBAH MASTER APAR BARU -->
+    <div id="addMasterAparModal" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm px-3 no-print">
+        <div class="bg-white w-full max-w-sm rounded-3xl shadow-2xl p-6 space-y-3 text-xs border border-slate-100">
+            <h3 class="text-sm font-bold text-slate-900 border-b pb-2">Tambah Master Profil APAR Baru</h3>
+            <form onsubmit="handleMasterAparAddSubmit(event)" class="space-y-3">
+                <div>
+                    <label class="block font-semibold text-slate-700 mb-1">Nomor ID Unik (Angka) *</label>
+                    <input type="number" id="addMasterId" required class="w-full px-3 py-2 border rounded-xl font-bold shadow-sm">
+                </div>
+                <div>
+                    <label class="block font-semibold text-slate-700 mb-1">Kode APAR *</label>
+                    <input type="text" id="addMasterCode" required placeholder="APAR-001" class="w-full px-3 py-2 border rounded-xl font-bold shadow-sm">
+                </div>
+                <div>
+                    <label class="block font-semibold text-slate-700 mb-1">Lokasi Area *</label>
+                    <input type="text" id="addMasterLoc" required placeholder="Area Pabrik / Gedung..." class="w-full px-3 py-2 border rounded-xl shadow-sm">
+                </div>
+                <div class="grid grid-cols-2 gap-2">
+                    <div>
+                        <label class="block font-semibold text-slate-700 mb-1">Media *</label>
+                        <select id="addMasterType" class="w-full px-3 py-2 border rounded-xl bg-white font-medium shadow-sm">
+                            <option value="Dry Chemical Powder">Powder</option>
+                            <option value="CO2">CO2</option>
+                            <option value="Foam AFFF">Foam</option>
+                            <option value="Clean Agent">Clean Agent</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block font-semibold text-slate-700 mb-1">Kapasitas (Kg) *</label>
+                        <input type="number" id="addMasterCap" value="6" required class="w-full px-3 py-2 border rounded-xl shadow-sm">
+                    </div>
+                </div>
+                <div class="grid grid-cols-2 gap-2">
+                    <div>
+                        <label class="block font-semibold text-slate-700 mb-1">Tekanan *</label>
+                        <select id="addMasterPressure" class="w-full px-3 py-2 border rounded-xl bg-white font-medium shadow-sm">
+                            <option value="Manometer">Manometer</option>
+                            <option value="Catridge">Catridge</option>
+                            <option value="High Pressure">High Pressure</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block font-semibold text-slate-700 mb-1">Exp *</label>
+                        <input type="text" id="addMasterExp" value="Desember 2028" required class="w-full px-3 py-2 border rounded-xl shadow-sm">
+                    </div>
+                </div>
+                <div class="flex gap-2 pt-2">
+                    <button type="submit" class="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-2.5 rounded-xl transition shadow">Simpan Master</button>
+                    <button type="button" onclick="closeAddMasterAparModal()" class="bg-slate-200 hover:bg-slate-300 text-slate-700 font-bold py-2.5 px-4 rounded-xl transition">Batal</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
     <!-- MODAL EDIT SPESIFIKASI APAR -->
     <div id="editQrModal" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm px-3 no-print">
         <div class="bg-white w-full max-w-sm rounded-3xl shadow-2xl p-6 space-y-3 text-xs border border-slate-100">
@@ -975,7 +1028,7 @@
             <input type="hidden" id="editQrIndex">
             <div class="space-y-3">
                 <div>
-                    <label class="block font-semibold text-slate-700 mb-1">Kode APAR</label>
+                    <label class="block font-semibold text-slate-700 mb-1">Kode APAR *</label>
                     <input type="text" id="modalQrCodeText" class="w-full px-3 py-2 border rounded-xl font-bold shadow-sm">
                 </div>
                 <div>
@@ -1070,7 +1123,7 @@
         </div>
     </div>
 
-    <!-- SCRIPT UTAMA INTEGRASI SINKRONISASI CLOUD & AUTO-SYNC REAL-TIME -->
+    <!-- SCRIPT UTAMA INTEGRASI SINKRONISASI CLOUD & STABILITAS STATE -->
     <script>
         const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxqUmvno_IsO9PMKIA6DaRkvPtNs6TZ0vMGpfsFLjwtiLZwpmxEKYz0c-MYkmNu2pPlog/exec";
         let currentUser = JSON.parse(localStorage.getItem('k3_current_user')) || null;
@@ -1081,8 +1134,6 @@
         let backupQrList = [];
         let activeMapEditIndex = null;
         let deletedAparHistoryStack = [];
-        let isMultiSelectMode = false;
-        let selectedMarkerIdsForDeletion = new Set();
         let isDraggingMarker = false;
         let draggedMarkerId = null;
         let isAdminMapEditMode = false;
@@ -1123,20 +1174,19 @@
             initStatusYearOptions();
             await fetchAparDataAndRenderMaps();
 
-            // SINKRONISASI OTOMATIS REAL-TIME (BACKGROUND POLLING SETIAP 6 DETIK)
+            // POLLING BACKGROUND YANG AMAN
             setInterval(async () => {
+                if (isAdminMapEditMode || isDraggingMarker) return;
                 try {
-                    // Cek pembaharuan master APAR diam-diam di background
                     const resMaster = await fetch(SCRIPT_URL + "?action=masterApar");
                     const jsonMaster = await resMaster.json();
                     if (jsonMaster.records && jsonMaster.records.length > 0) {
                         let newServerList = jsonMaster.records;
-                        // Bandingkan stringify untuk mendeteksi perubahan dari device lain
+                        newServerList.sort((a, b) => Number(a.id) - Number(b.id));
                         if (JSON.stringify(newServerList) !== JSON.stringify(qrList)) {
                             qrList = newServerList;
                             localStorage.setItem('k3_qr_list_unified_v13', JSON.stringify(qrList));
                             
-                            // Update tampilan tabel profile / peta secara otomatis jika sedang dibuka
                             const profileTable = document.getElementById('aparProfileTableBody');
                             if (profileTable && !document.getElementById('tabAparQrCode').classList.contains('hidden')) {
                                 const activeSubTab = document.getElementById('qrSubTableContainer');
@@ -1150,7 +1200,6 @@
                         }
                     }
 
-                    // Cek pembaharuan data rekap inspeksi APAR
                     const resApar = await fetch(SCRIPT_URL + "?action=apar");
                     const jsonApar = await resApar.json();
                     if (jsonApar.records) {
@@ -1159,7 +1208,6 @@
                             globalAparList = newAparRecords;
                             localStorage.setItem('k3_cached_apar_records', JSON.stringify(globalAparList));
                             
-                            // Jika halaman rekap atau status sedang aktif, auto-refresh tampilan tabelnya
                             const reportTab = document.getElementById('tabAparReport');
                             if (reportTab && !reportTab.classList.contains('hidden')) {
                                 processAndRenderReportTable(globalAparList);
@@ -1170,10 +1218,8 @@
                             }
                         }
                     }
-                } catch(err) {
-                    // Abaikan error jaringan sementara saat background sync
-                }
-            }, 6000);
+                } catch(err) {}
+            }, 8000);
 
             window.addEventListener('keydown', async (e) => {
                 if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'z') {
@@ -1211,8 +1257,6 @@
                             } catch (err) {
                                 alert("Gagal melakukan undo ke server.");
                             }
-                        } else {
-                            alert("Tidak ada riwayat data yang bisa di-undo.");
                         }
                     }
                 }
@@ -1242,7 +1286,10 @@
         async function initQrListStorage() {
             let savedLocal = localStorage.getItem('k3_qr_list_unified_v13');
             if (savedLocal) {
-                try { qrList = JSON.parse(savedLocal); } catch(e){}
+                try { 
+                    qrList = JSON.parse(savedLocal); 
+                    qrList.sort((a, b) => Number(a.id) - Number(b.id));
+                } catch(e){}
             }
 
             try {
@@ -1256,9 +1303,9 @@
                     qrList = [];
                     const pressureOptions = ["Manometer", "Catridge", "High Pressure"];
                     const expYears = ["Desember 2027", "Desember 2028", "Oktober 2028", "November 2029", "Januari 2028"];
-                    for(let i = 1; i <= 150; i++) {
-                        let defaultX = 10 + ((i - 1) % 15) * 5.5;
-                        let defaultY = 15 + Math.floor((i - 1) / 15) * 8.0;
+                    for(let i = 1; i <= 97; i++) {
+                        let defaultX = 5 + ((i - 1) % 15) * 6.2;
+                        let defaultY = 10 + Math.floor((i - 1) / 15) * 12.0;
                         qrList.push({
                             id: i,
                             code: `APAR-${String(i).padStart(3, '0')}`,
@@ -1722,8 +1769,10 @@
                         <td class="p-2.5 border-b text-center">${item.capacity} Kg</td>
                         <td class="p-2.5 border-b text-center font-semibold text-blue-800">${item.pressureType || 'Manometer'}</td>
                         <td class="p-2.5 border-b text-center font-bold text-red-600">${item.expDate || 'Des 2028'}</td>
-                        <td class="p-2.5 border-b text-center no-print">
-                            <button type="button" onclick="openQrEditModal(${realIndex})" class="bg-amber-600 hover:bg-amber-700 text-white px-2.5 py-1 rounded-xl text-[10px] font-semibold transition shadow whitespace-nowrap">✏️ Edit</button>
+                        <td class="p-2.5 border-b text-center no-print space-x-1">
+                            <button type="button" onclick="transferAparToOneMapPoint(${realIndex})" class="bg-blue-600 hover:bg-blue-700 text-white px-2.5 py-1 rounded-lg text-[10px] font-semibold transition shadow whitespace-nowrap" title="Tempatkan / Transfer Titik ke Peta">📍 Ke Peta</button>
+                            <button type="button" onclick="openQrEditModal(${realIndex})" class="bg-amber-600 hover:bg-amber-700 text-white px-2.5 py-1 rounded-lg text-[10px] font-semibold transition shadow whitespace-nowrap">✏️ Edit</button>
+                            <button type="button" onclick="deleteMasterAparItem(${realIndex})" class="bg-red-600 hover:bg-red-700 text-white px-2.5 py-1 rounded-lg text-[10px] font-semibold transition shadow whitespace-nowrap">🗑️ Hapus</button>
                         </td>
                     </tr>
                 `;
@@ -1735,6 +1784,92 @@
             const query = document.getElementById('searchAparProfile').value.toLowerCase();
             const filtered = qrList.filter(item => item.code.toLowerCase().includes(query) || item.location.toLowerCase().includes(query) || item.type.toLowerCase().includes(query));
             renderAparProfileTable(filtered);
+        }
+
+        function openAddMasterAparModal() {
+            let nextId = 1;
+            if(qrList.length > 0) {
+                let maxId = Math.max(...qrList.map(q => Number(q.id) || 0));
+                nextId = maxId + 1;
+            }
+            document.getElementById('addMasterId').value = nextId;
+            document.getElementById('addMasterCode').value = `APAR-${String(nextId).padStart(3, '0')}`;
+            document.getElementById('addMasterLoc').value = `Area Pabrik / Gedung #${nextId}`;
+            document.getElementById('addMasterType').value = "Dry Chemical Powder";
+            document.getElementById('addMasterCap').value = "6";
+            document.getElementById('addMasterPressure').value = "Manometer";
+            document.getElementById('addMasterExp').value = "Desember 2028";
+            document.getElementById('addMasterAparModal').classList.remove('hidden');
+        }
+
+        function closeAddMasterAparModal() {
+            document.getElementById('addMasterAparModal').classList.add('hidden');
+        }
+
+        async function handleMasterAparAddSubmit(event) {
+            event.preventDefault();
+            const id = Number(document.getElementById('addMasterId').value);
+            const code = document.getElementById('addMasterCode').value.trim();
+            const location = document.getElementById('addMasterLoc').value.trim();
+            const type = document.getElementById('addMasterType').value;
+            const capacity = document.getElementById('addMasterCap').value.trim();
+            const pressureType = document.getElementById('addMasterPressure').value;
+            const expDate = document.getElementById('addMasterExp').value.trim();
+
+            if(!code || !location) {
+                alert("Kode dan Lokasi wajib diisi!");
+                return;
+            }
+
+            if(qrList.some(q => Number(q.id) === id || q.code.toLowerCase() === code.toLowerCase())) {
+                alert("ID atau Kode APAR sudah terdaftar! Gunakan ID/Kode lain.");
+                return;
+            }
+
+            qrList.push({
+                id: id,
+                code: code,
+                location: location,
+                type: type,
+                capacity: capacity,
+                pressureType: pressureType,
+                expDate: expDate,
+                x: 50.0,
+                y: 50.0
+            });
+
+            qrList.sort((a, b) => Number(a.id) - Number(b.id));
+            localStorage.setItem('k3_qr_list_unified_v13', JSON.stringify(qrList));
+            await saveMapPositions();
+            closeAddMasterAparModal();
+            switchQrSubTab('table');
+            alert(`Master APAR ${code} berhasil ditambahkan!`);
+        }
+
+        async function transferAparToOneMapPoint(index) {
+            const item = qrList[index];
+            if(!item) return;
+            
+            item.x = 50.0;
+            item.y = 50.0;
+            activeMapEditIndex = item.id;
+            
+            localStorage.setItem('k3_qr_list_unified_v13', JSON.stringify(qrList));
+            await saveMapPositions();
+            
+            alert(`Titik APAR ${item.code} (${item.location}) berhasil ditransfer ke Peta (posisi tengah). Silakan masuk ke Mode Edit Peta jika ingin menggesernya ke titik aktual.`);
+        }
+
+        async function deleteMasterAparItem(index) {
+            let item = qrList[index];
+            if(confirm(`Hapus master APAR "${item.code}" dari tabel dan peta?`)) {
+                qrList.splice(index, 1);
+                qrList.sort((a, b) => Number(a.id) - Number(b.id));
+                localStorage.setItem('k3_qr_list_unified_v13', JSON.stringify(qrList));
+                await saveMapPositions();
+                switchQrSubTab('table');
+                alert("Master APAR berhasil dihapus!");
+            }
         }
 
         function renderBackupAparProfileTable(dataArray) {
@@ -2211,30 +2346,13 @@
                 btnEditMode.className = "bg-red-600 hover:bg-red-700 text-white px-3.5 py-2 rounded-xl text-xs font-semibold transition shadow whitespace-nowrap";
                 btnEditMode.textContent = "🔓 Keluar Mode Edit Peta";
                 editTools.classList.remove('hidden');
-                desc.innerHTML = `<span class="text-amber-700 font-bold">⚠️ Mode Edit Aktif: Kursor tangan (drag) aktif. Popup dikunci.</span>`;
+                desc.innerHTML = `<span class="text-amber-700 font-bold">⚠️ Mode Edit Peta Aktif: Geser titik APAR ke posisi aktual.</span>`;
             } else {
                 btnEditMode.className = "bg-amber-600 hover:bg-amber-700 text-white px-3.5 py-2 rounded-xl text-xs font-semibold transition shadow whitespace-nowrap";
                 btnEditMode.textContent = "✏️ Masuk Mode Edit Peta";
                 editTools.classList.add('hidden');
-                isMultiSelectMode = false;
-                selectedMarkerIdsForDeletion.clear();
+                activeMapEditIndex = null;
                 desc.innerHTML = `Status: Mode Normal (Klik titik untuk melihat popup info).`;
-            }
-            renderAdminMapMarkers();
-        }
-
-        function toggleMultiSelectMode() {
-            isMultiSelectMode = !isMultiSelectMode;
-            const btn = document.getElementById('toggleMultiSelectBtn');
-            if (isMultiSelectMode) {
-                btn.className = "bg-purple-600 hover:bg-purple-700 text-white px-3 py-2 rounded-xl text-xs font-semibold transition shadow whitespace-nowrap animate-pulse";
-                btn.textContent = "❌ Batal Pilih";
-                selectedMarkerIdsForDeletion.clear();
-                alert("Mode Pilih Titik Aktif!\n\nKlik pada titik-titik APAR di peta yang ingin dihapus sekaligus, lalu klik tombol '🗑️ Hapus Titik' untuk menghapus semuanya secara bersamaan.");
-            } else {
-                btn.className = "bg-slate-700 hover:bg-slate-800 text-white px-3 py-2 rounded-xl text-xs font-semibold transition shadow whitespace-nowrap";
-                btn.textContent = "☑️ Pilih Titik";
-                selectedMarkerIdsForDeletion.clear();
             }
             renderAdminMapMarkers();
         }
@@ -2287,12 +2405,8 @@
 
                 let marker = document.createElement('div');
                 let colorClass = "";
-                let selectionBadge = "";
 
-                if (isAdminMapEditMode && isMultiSelectMode && selectedMarkerIdsForDeletion.has(item.id)) {
-                    colorClass = "bg-purple-600 text-white ring-2 ring-purple-300 scale-125 z-40";
-                    selectionBadge = `<span class="absolute -top-1 -right-1 bg-white text-purple-700 rounded-full w-3 h-3 text-[6px] font-extrabold flex items-center justify-center shadow border border-purple-600">✓</span>`;
-                } else if(activeMapEditIndex === item.id) {
+                if(isAdminMapEditMode && Number(activeMapEditIndex) === Number(item.id)) {
                     colorClass = "bg-amber-500 scale-150 ring-4 ring-amber-300 animate-fast-blink text-white z-50";
                 } else if(isPerbaikan) {
                     colorClass = "bg-red-600 text-white font-extrabold shadow-[0_0_8px_rgba(239,68,68,1)] animate-fast-blink";
@@ -2306,11 +2420,10 @@
                 marker.className = `map-marker absolute w-4 h-4 -ml-2 -mt-2 font-bold text-[8px] rounded-full flex items-center justify-center shadow border-2 border-white transition z-20 ${cursorStyle} ${colorClass}`;
                 marker.style.left = `${item.x || 50}%`;
                 marker.style.top = `${item.y || 50}%`;
-                marker.innerHTML = `${item.id}${selectionBadge}`;
+                marker.textContent = item.id;
                 
                 if (isAdminMapEditMode) {
                     marker.onmousedown = (e) => {
-                        if (isMultiSelectMode) return;
                         e.stopPropagation();
                         isDraggingMarker = true;
                         draggedMarkerId = item.id;
@@ -2320,7 +2433,6 @@
                     };
 
                     marker.ontouchstart = (e) => {
-                        if (isMultiSelectMode) return;
                         e.stopPropagation();
                         isDraggingMarker = true;
                         draggedMarkerId = item.id;
@@ -2331,18 +2443,9 @@
 
                     marker.onclick = (e) => {
                         e.stopPropagation();
-                        if (isMultiSelectMode) {
-                            if (selectedMarkerIdsForDeletion.has(item.id)) {
-                                selectedMarkerIdsForDeletion.delete(item.id);
-                            } else {
-                                selectedMarkerIdsForDeletion.add(item.id);
-                            }
-                            renderAdminMapMarkers();
-                        } else {
-                            activeMapEditIndex = item.id;
-                            select.value = item.id;
-                            renderAdminMapMarkers();
-                        }
+                        activeMapEditIndex = item.id;
+                        select.value = item.id;
+                        renderAdminMapMarkers();
                     };
                 } else {
                     marker.onclick = (e) => {
@@ -2412,98 +2515,6 @@
                     draggedMarkerId = null;
                 }
             };
-
-            canvas.onclick = (e) => {
-                if (!isAdminMapEditMode || isMultiSelectMode) return;
-                if(!activeMapEditIndex) return;
-                const rect = canvas.getBoundingClientRect();
-                const xClick = e.clientX - rect.left;
-                const yClick = e.clientY - rect.top;
-                const xPct = ((xClick / rect.width) * 100).toFixed(1);
-                const yPct = ((yClick / rect.height) * 100).toFixed(1);
-
-                let target = qrList.find(q => q.id === activeMapEditIndex);
-                if(target) {
-                    target.x = parseFloat(xPct);
-                    target.y = parseFloat(yPct);
-                    renderAdminMapMarkers();
-                }
-            };
-        }
-
-        function addNewAparMarker() {
-            let maxId = 0;
-            qrList.forEach(q => {
-                if (Number(q.id) > maxId) {
-                    maxId = Number(q.id);
-                }
-            });
-            let nextId = maxId + 1;
-            
-            const newCode = `APAR-${String(nextId).padStart(3, '0')}`;
-            const newLocation = `Area Baru APAR #${nextId}`;
-
-            const newAparItem = {
-                id: nextId,
-                code: newCode,
-                location: newLocation,
-                type: "Dry Chemical Powder",
-                capacity: "6",
-                pressureType: "Manometer",
-                expDate: "Desember 2028",
-                x: 50.0,
-                y: 50.0
-            };
-
-            qrList.push(newAparItem);
-            qrList.sort((a, b) => Number(a.id) - Number(b.id));
-            activeMapEditIndex = nextId;
-            localStorage.setItem('k3_qr_list_unified_v13', JSON.stringify(qrList));
-            
-            renderAparProfileTable(qrList);
-            renderAdminMapMarkers();
-            document.getElementById('mapItemSelect').value = nextId;
-            
-            alert(`Titik APAR baru (${newCode}) telah ditambahkan di tengah denah!\n\nSilakan geser titik ke lokasi yang sesuai, lalu klik "💾 Simpan Peta Ke Cloud".`);
-        }
-
-        function editActiveMarkerNumber() {
-            if(!activeMapEditIndex) {
-                alert("Silakan pilih/klik titik APAR di peta terlebih dahulu.");
-                return;
-            }
-            let target = qrList.find(q => q.id === activeMapEditIndex);
-            if(!target) return;
-
-            let newNumStr = prompt(`Ubah nomor ID untuk titik APAR (${target.id}):`, target.id);
-            if(newNumStr === null) return;
-
-            let newId = parseInt(newNumStr);
-            if(isNaN(newId) || newId <= 0) {
-                alert("Masukkan angka yang valid!");
-                return;
-            }
-
-            let existingActive = qrList.find(q => Number(q.id) === newId && Number(q.id) !== Number(target.id));
-            if(existingActive) {
-                alert(`Nomor titik ${newId} sedang digunakan oleh ${existingActive.code}!`);
-                return;
-            }
-
-            if (selectedMarkerIdsForDeletion.has(target.id)) {
-                selectedMarkerIdsForDeletion.delete(target.id);
-                selectedMarkerIdsForDeletion.add(newId);
-            }
-
-            target.id = newId;
-            target.code = `APAR-${String(newId).padStart(3, '0')}`;
-            activeMapEditIndex = newId;
-
-            qrList.sort((a, b) => Number(a.id) - Number(b.id));
-            localStorage.setItem('k3_qr_list_unified_v13', JSON.stringify(qrList));
-            renderAparProfileTable(qrList);
-            renderAdminMapMarkers();
-            alert(`Nomor titik APAR diubah menjadi ID #${newId} (${target.code})! Jangan lupa klik "💾 Simpan Peta Ke Cloud".`);
         }
 
         function focusMapItem(id) {
@@ -2514,63 +2525,6 @@
             }
             activeMapEditIndex = parseInt(id);
             renderAdminMapMarkers();
-        }
-
-        function deleteActiveMarker() {
-            if (isMultiSelectMode) {
-                if (selectedMarkerIdsForDeletion.size === 0) {
-                    alert("Belum ada titik yang dipilih untuk dihapus.");
-                    return;
-                }
-                if (confirm(`Hapus ${selectedMarkerIdsForDeletion.size} titik APAR yang dipilih?`)) {
-                    let idsToRemove = Array.from(selectedMarkerIdsForDeletion).map(id => Number(id));
-                    qrList = qrList.filter(q => !idsToRemove.includes(Number(q.id)));
-
-                    localStorage.setItem('k3_qr_list_unified_v13', JSON.stringify(qrList));
-                    selectedMarkerIdsForDeletion.clear();
-                    activeMapEditIndex = null;
-                    isMultiSelectMode = false;
-                    
-                    const btn = document.getElementById('toggleMultiSelectBtn');
-                    if(btn) {
-                        btn.className = "bg-slate-700 hover:bg-slate-800 text-white px-3 py-2 rounded-xl text-xs font-semibold transition shadow whitespace-nowrap";
-                        btn.textContent = "☑️ Pilih Titik";
-                    }
-
-                    renderAparProfileTable(qrList);
-                    renderAdminMapMarkers();
-                    renderPublicMapMarkers();
-                    renderStatusMapMarkers();
-
-                    alert("Titik-titik APAR yang dipilih berhasil dihapus!");
-                }
-            } else {
-                if(!activeMapEditIndex) { 
-                    alert("Silakan klik titik APAR di peta terlebih dahulu."); 
-                    return; 
-                }
-                
-                let targetIndex = qrList.findIndex(q => Number(q.id) === Number(activeMapEditIndex));
-                if(targetIndex === -1) {
-                    alert("Data titik APAR tidak ditemukan.");
-                    return;
-                }
-
-                let target = qrList[targetIndex];
-                if(confirm(`Hapus titik penempatan APAR ID #${target.id} (${target.code})?`)) {
-                    qrList.splice(targetIndex, 1);
-                    
-                    localStorage.setItem('k3_qr_list_unified_v13', JSON.stringify(qrList));
-                    activeMapEditIndex = null;
-                    
-                    renderAparProfileTable(qrList);
-                    renderAdminMapMarkers();
-                    renderPublicMapMarkers();
-                    renderStatusMapMarkers();
-                    
-                    alert(`Titik APAR ID #${target.id} berhasil dihapus! Jangan lupa Simpan ke Cloud.`);
-                }
-            }
         }
 
         async function saveMapPositions() {
@@ -2590,7 +2544,7 @@
                     body: JSON.stringify(payload) 
                 });
                 
-                alert("Posisi & Data Master APAR berhasil disimpan dan tersinkronisasi ke Google Sheets Cloud!");
+                alert("Posisi Peta berhasil disimpan dan tersinkronisasi ke Google Sheets Cloud!");
             } catch (err) {
                 alert("Tersimpan di lokal, namun gagal terhubung ke cloud server.");
             }
@@ -2626,10 +2580,19 @@
                 
                 qrList.sort((a, b) => Number(a.id) - Number(b.id));
                 localStorage.setItem('k3_qr_list_unified_v13', JSON.stringify(qrList));
-                await saveMapPositions();
+                
+                try {
+                    fetch(SCRIPT_URL, { 
+                        method: "POST", 
+                        mode: "no-cors",
+                        headers: { "Content-Type": "text/plain;charset=utf-8" }, 
+                        body: JSON.stringify({ action: "saveMasterApar", aparList: qrList }) 
+                    });
+                } catch(e){}
                 
                 closeQrEditModal();
                 switchQrSubTab('table');
+                alert("Profil APAR berhasil diperbarui!");
             }
         }
 
