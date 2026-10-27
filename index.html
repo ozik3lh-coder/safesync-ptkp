@@ -329,7 +329,7 @@
                             </div>
                             <div class="flex gap-2 flex-wrap">
                                 <button type="button" onclick="openManualAddAparModal()" class="bg-emerald-600 hover:bg-emerald-700 text-white px-3 py-2 rounded-xl text-xs font-semibold transition shadow whitespace-nowrap">➕ Tambah Data</button>
-                                <button type="button" onclick="loadReportData()" class="bg-slate-900 hover:bg-black text-white px-3 py-2 rounded-xl text-xs font-semibold transition shadow whitespace-nowrap">Muat Ulang</button>
+                                <button type="button" onclick="loadReportData(true)" class="bg-slate-900 hover:bg-black text-white px-3 py-2 rounded-xl text-xs font-semibold transition shadow whitespace-nowrap">Muat Ulang</button>
                                 <button type="button" onclick="window.print()" class="bg-red-600 hover:bg-red-700 text-white px-3 py-2 rounded-xl text-xs font-semibold transition shadow whitespace-nowrap">🖨️ Cetak PDF</button>
                             </div>
                         </div>
@@ -856,11 +856,11 @@
             <div class="flex justify-center bg-slate-900 p-2 rounded-2xl max-h-[60vh] overflow-auto shadow-inner">
                 <img id="modalFullImage" src="" class="max-h-[50vh] object-contain rounded-xl shadow">
             </div>
-            <div class="flex gap-2 pt-1">
+            <div class="flex gap-2 pt-1 flex-wrap">
                 <button type="button" id="modalDownloadBtn" class="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-3 rounded-xl transition shadow flex items-center justify-center gap-2 text-xs">
                     <span>⬇️ Download Foto</span>
                 </button>
-                <button type="button" onclick="closePhotoPreviewModal()" class="bg-slate-200 hover:bg-slate-300 text-slate-700 font-bold py-3 px-5 rounded-xl transition text-xs">Tutup</button>
+                <button type="button" onclick="closePhotoPreviewModal()" class="bg-slate-200 hover:bg-slate-300 text-slate-700 font-bold py-3 px-4 rounded-xl transition text-xs">Tutup</button>
             </div>
         </div>
     </div>
@@ -909,8 +909,8 @@
 
                 <div class="border-t pt-2 space-y-1.5">
                     <label class="block font-semibold text-slate-700">Foto Dokumentasi</label>
-                    <div id="currentPhotoPreviewContainer" class="flex items-center gap-2"></div>
-                    <input type="file" id="editPhotoFile" accept="image/*" capture="environment" class="w-full text-[11px] text-slate-500 border rounded-xl p-1.5 bg-slate-50">
+                    <div id="currentPhotoPreviewContainer" class="flex items-center justify-between bg-slate-50 p-2 rounded-xl border"></div>
+                    <input type="file" id="editPhotoFile" accept="image/*" capture="environment" class="w-full text-[11px] text-slate-500 border rounded-xl p-1.5 bg-slate-50 mt-1">
                 </div>
 
                 <div class="flex gap-2 pt-2">
@@ -1070,7 +1070,7 @@
         </div>
     </div>
 
-    <!-- SCRIPT UTAMA INTEGRASI SINKRONISASI CLOUD -->
+    <!-- SCRIPT UTAMA INTEGRASI SINKRONISASI CLOUD & OPTIMASI PERFORMA -->
     <script>
         const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxqUmvno_IsO9PMKIA6DaRkvPtNs6TZ0vMGpfsFLjwtiLZwpmxEKYz0c-MYkmNu2pPlog/exec";
         let currentUser = JSON.parse(localStorage.getItem('k3_current_user')) || null;
@@ -1088,6 +1088,7 @@
         let isAdminMapEditMode = false;
         let popupCurrentPhotoBase64 = "";
         let popupCurrentCode = "";
+        let popupCurrentRowIndex = -1;
 
         let appCredentials = JSON.parse(localStorage.getItem('k3_app_credentials')) || {
             admin: { user: 'admin', pass: 'admin123' },
@@ -1106,6 +1107,17 @@
             checkAuthSession();
             renderApdStock();
             initFilterDefaults();
+            
+            let cachedApar = localStorage.getItem('k3_cached_apar_records');
+            if (cachedApar) {
+                try { globalAparList = JSON.parse(cachedApar); } catch(e){}
+            }
+
+            let cachedUndo = localStorage.getItem('k3_deleted_apar_stack');
+            if (cachedUndo) {
+                try { deletedAparHistoryStack = JSON.parse(cachedUndo); } catch(e){}
+            }
+
             await initQrListStorage();
             initBackupQrListStorage();
             initStatusYearOptions();
@@ -1118,6 +1130,7 @@
                         e.preventDefault();
                         if (deletedAparHistoryStack.length > 0) {
                             let lastDeleted = deletedAparHistoryStack.pop();
+                            localStorage.setItem('k3_deleted_apar_stack', JSON.stringify(deletedAparHistoryStack));
                             try {
                                 const payload = {
                                     action: "apar",
@@ -1125,8 +1138,8 @@
                                     location: lastDeleted[2],
                                     type: lastDeleted[3] || 'Dry Chemical Powder',
                                     capacity: lastDeleted[4] || '6',
-                                    pressureType: lastDeleted[7] || 'Manometer',
-                                    expDate: 'Desember 2028',
+                                    pressureType: lastDeleted[5] || 'Manometer',
+                                    expDate: lastDeleted[6] || 'Desember 2028',
                                     pressure: lastDeleted[7] || 'Normal',
                                     pin: lastDeleted[8] || 'Terpasang & Tersegel',
                                     hose: lastDeleted[9] || 'Bagus',
@@ -1139,9 +1152,9 @@
                                     inspector: lastDeleted[16] || 'Admin',
                                     photoBase64: lastDeleted[17] || ''
                                 };
-                                await fetch(SCRIPT_URL, { method: "POST", headers: { "Content-Type": "text/plain;charset=utf-8" }, body: JSON.stringify(payload) });
+                                fetch(SCRIPT_URL, { method: "POST", mode: "no-cors", headers: { "Content-Type": "text/plain;charset=utf-8" }, body: JSON.stringify(payload) });
                                 alert(`Undo berhasil! Data APAR ${lastDeleted[1]} dikembalikan.`);
-                                await loadReportData();
+                                await loadReportData(true);
                                 await fetchAparDataAndRenderMaps();
                             } catch (err) {
                                 alert("Gagal melakukan undo ke server.");
@@ -1174,14 +1187,19 @@
             }
         }
 
-        // ================= SINKRONISASI CLOUD MASTER PROFIL APAR =================
         async function initQrListStorage() {
+            let savedLocal = localStorage.getItem('k3_qr_list_unified_v13');
+            if (savedLocal) {
+                try { qrList = JSON.parse(savedLocal); } catch(e){}
+            }
+
             try {
                 const res = await fetch(SCRIPT_URL + "?action=masterApar");
                 const result = await res.json();
                 if (result.records && result.records.length > 0) {
                     qrList = result.records;
-                } else {
+                    localStorage.setItem('k3_qr_list_unified_v13', JSON.stringify(qrList));
+                } else if(qrList.length === 0) {
                     qrList = [];
                     const pressureOptions = ["Manometer", "Catridge", "High Pressure"];
                     const expYears = ["Desember 2027", "Desember 2028", "Oktober 2028", "November 2029", "Januari 2028"];
@@ -1200,17 +1218,15 @@
                             y: parseFloat(defaultY.toFixed(1))
                         });
                     }
-                    await fetch(SCRIPT_URL, {
+                    localStorage.setItem('k3_qr_list_unified_v13', JSON.stringify(qrList));
+                    fetch(SCRIPT_URL, {
                         method: "POST",
+                        mode: "no-cors",
                         headers: { "Content-Type": "text/plain;charset=utf-8" },
                         body: JSON.stringify({ action: "saveMasterApar", aparList: qrList })
                     });
                 }
-                localStorage.setItem('k3_qr_list_unified_v13', JSON.stringify(qrList));
-            } catch(e) {
-                let saved = localStorage.getItem('k3_qr_list_unified_v13');
-                if(saved) qrList = JSON.parse(saved);
-            }
+            } catch(e) {}
         }
 
         function initBackupQrListStorage() {
@@ -1560,21 +1576,30 @@
 
             const mVal = document.getElementById('statusMonthSelect').value;
             const yVal = document.getElementById('statusYearSelect').value;
-            const targetYearMonth = `${yVal}-${mVal}`;
 
             try {
-                const res = await fetch(SCRIPT_URL + "?action=apar");
-                const result = await res.json();
-                globalAparList = result.records || [];
+                let records = globalAparList;
+                if(!records || records.length === 0) {
+                    const res = await fetch(SCRIPT_URL + "?action=apar");
+                    const result = await res.json();
+                    records = result.records || [];
+                    globalAparList = records;
+                    localStorage.setItem('k3_cached_apar_records', JSON.stringify(globalAparList));
+                }
 
                 let checkedCodesSet = new Set();
-                if (globalAparList) {
-                    globalAparList.forEach(r => {
+                if (records) {
+                    records.forEach(r => {
                         let checkDateStr = r[0] || '';
-                        if (checkDateStr && checkDateStr.startsWith(targetYearMonth)) {
-                            if (r[1]) {
-                                checkedCodesSet.add(r[1].trim().toLowerCase());
+                        let d = new Date(checkDateStr);
+                        if (!isNaN(d.getTime())) {
+                            let recYr = d.getFullYear();
+                            let recMth = String(d.getMonth() + 1).padStart(2, '0');
+                            if (recYr == yVal && recMth === mVal) {
+                                if (r[1]) checkedCodesSet.add(r[1].trim().toLowerCase());
                             }
+                        } else if (checkDateStr.startsWith(`${yVal}-${mVal}`)) {
+                            if (r[1]) checkedCodesSet.add(r[1].trim().toLowerCase());
                         }
                     });
                 }
@@ -1803,9 +1828,9 @@
                 const res = await fetch(SCRIPT_URL + "?action=apar");
                 const result = await res.json();
                 globalAparList = result.records || [];
-            } catch(e) {
-                globalAparList = [];
-            }
+                localStorage.setItem('k3_cached_apar_records', JSON.stringify(globalAparList));
+            } catch(e) {}
+
             renderPublicMapMarkers();
             renderStatusMapMarkers();
             renderAdminMapMarkers();
@@ -1863,6 +1888,7 @@
             
             popupCurrentPhotoBase64 = "";
             popupCurrentCode = item.code;
+            popupCurrentRowIndex = -1;
             photoWrapper.innerHTML = `<span class="text-slate-400 italic text-[11px]" id="popupNoPhotoText">Tidak ada foto dokumentasi pada periode ini.</span>`;
             downloadPhotoBtn.classList.add('hidden');
 
@@ -1870,7 +1896,9 @@
             document.getElementById('aparDetailModal').classList.remove('hidden');
 
             const now = new Date();
-            const currentYearMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+            const currentYear = now.getFullYear();
+            const currentMonth = String(now.getMonth() + 1).padStart(2, '0');
+
             let isCheckedThisMonth = false;
             let currentStatusKelayakan = "BELUM DICEK";
             let catatanPerbaikan = "";
@@ -1884,6 +1912,7 @@
                     const result = await res.json();
                     records = result.records || [];
                     globalAparList = records;
+                    localStorage.setItem('k3_cached_apar_records', JSON.stringify(globalAparList));
                 }
                 if(records) {
                     let matchingRecords = records.filter(r => r[1] && r[1].trim().toLowerCase() === item.code.toLowerCase());
@@ -1896,7 +1925,15 @@
 
                     let monthMatchingRecords = records.filter(r => {
                         let checkDateStr = r[0] || '';
-                        return checkDateStr && checkDateStr.startsWith(currentYearMonth) && r[1] && r[1].trim().toLowerCase() === item.code.toLowerCase();
+                        let d = new Date(checkDateStr);
+                        if (!isNaN(d.getTime())) {
+                            let recYr = d.getFullYear();
+                            let recMth = String(d.getMonth() + 1).padStart(2, '0');
+                            return recYr == currentYear && recMth === currentMonth && r[1] && r[1].trim().toLowerCase() === item.code.toLowerCase();
+                        } else if (checkDateStr.startsWith(`${currentYear}-${currentMonth}`)) {
+                            return r[1] && r[1].trim().toLowerCase() === item.code.toLowerCase();
+                        }
+                        return false;
                     });
 
                     if(monthMatchingRecords.length > 0) {
@@ -1905,6 +1942,7 @@
                         currentStatusKelayakan = latestMonthRecord[14] || "LAYAK";
                         catatanPerbaikan = latestMonthRecord[15] || latestMonthRecord[16] || "";
                         foundPhoto = latestMonthRecord[17] || "";
+                        popupCurrentRowIndex = records.findIndex(r => r === latestMonthRecord);
                     }
                 }
             } catch(e) {}
@@ -1998,7 +2036,8 @@
             layer.innerHTML = "";
 
             const now = new Date();
-            const currentYearMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+            const currentYear = now.getFullYear();
+            const currentMonth = String(now.getMonth() + 1).padStart(2, '0');
             const activeMarkers = qrList;
 
             activeMarkers.forEach(item => {
@@ -2010,7 +2049,15 @@
                 if(globalAparList) {
                     let monthMatchingRecords = globalAparList.filter(r => {
                         let checkDateStr = r[0] || '';
-                        return checkDateStr && checkDateStr.startsWith(currentYearMonth) && r[1] && r[1].trim().toLowerCase() === item.code.toLowerCase();
+                        let d = new Date(checkDateStr);
+                        if (!isNaN(d.getTime())) {
+                            let recYr = d.getFullYear();
+                            let recMth = String(d.getMonth() + 1).padStart(2, '0');
+                            return recYr == currentYear && recMth === currentMonth && r[1] && r[1].trim().toLowerCase() === item.code.toLowerCase();
+                        } else if (checkDateStr.startsWith(`${currentYear}-${currentMonth}`)) {
+                            return r[1] && r[1].trim().toLowerCase() === item.code.toLowerCase();
+                        }
+                        return false;
                     });
                     if(monthMatchingRecords.length > 0) {
                         isCheckedThisMonth = true;
@@ -2048,7 +2095,6 @@
 
             const mVal = document.getElementById('statusMonthSelect') ? document.getElementById('statusMonthSelect').value : String(new Date().getMonth() + 1).padStart(2, '0');
             const yVal = document.getElementById('statusYearSelect') ? document.getElementById('statusYearSelect').value : new Date().getFullYear();
-            const targetYearMonth = `${yVal}-${mVal}`;
 
             const activeMarkers = qrList;
 
@@ -2061,7 +2107,15 @@
                 if(globalAparList) {
                     let matchingRecords = globalAparList.filter(r => {
                         let checkDateStr = r[0] || '';
-                        return checkDateStr && checkDateStr.startsWith(targetYearMonth) && r[1] && r[1].trim().toLowerCase() === item.code.toLowerCase();
+                        let d = new Date(checkDateStr);
+                        if (!isNaN(d.getTime())) {
+                            let recYr = d.getFullYear();
+                            let recMth = String(d.getMonth() + 1).padStart(2, '0');
+                            return recYr == yVal && recMth === mVal && r[1] && r[1].trim().toLowerCase() === item.code.toLowerCase();
+                        } else if (checkDateStr.startsWith(`${yVal}-${mVal}`)) {
+                            return r[1] && r[1].trim().toLowerCase() === item.code.toLowerCase();
+                        }
+                        return false;
                     });
                     if(matchingRecords.length > 0) {
                         isCheckedThisPeriod = true;
@@ -2146,7 +2200,8 @@
             }
 
             const now = new Date();
-            const currentYearMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+            const currentYear = now.getFullYear();
+            const currentMonth = String(now.getMonth() + 1).padStart(2, '0');
             const activeMarkers = qrList;
 
             activeMarkers.forEach(item => {
@@ -2158,7 +2213,15 @@
                 if(globalAparList) {
                     let monthMatchingRecords = globalAparList.filter(r => {
                         let checkDateStr = r[0] || '';
-                        return checkDateStr && checkDateStr.startsWith(currentYearMonth) && r[1] && r[1].trim().toLowerCase() === item.code.toLowerCase();
+                        let d = new Date(checkDateStr);
+                        if (!isNaN(d.getTime())) {
+                            let recYr = d.getFullYear();
+                            let recMth = String(d.getMonth() + 1).padStart(2, '0');
+                            return recYr == currentYear && recMth === currentMonth && r[1] && r[1].trim().toLowerCase() === item.code.toLowerCase();
+                        } else if (checkDateStr.startsWith(`${currentYear}-${currentMonth}`)) {
+                            return r[1] && r[1].trim().toLowerCase() === item.code.toLowerCase();
+                        }
+                        return false;
                     });
                     if(monthMatchingRecords.length > 0) {
                         isCheckedThisMonth = true;
@@ -2462,8 +2525,9 @@
                     aparList: qrList
                 };
                 
-                await fetch(SCRIPT_URL, { 
+                fetch(SCRIPT_URL, { 
                     method: "POST", 
+                    mode: "no-cors",
                     headers: { "Content-Type": "text/plain;charset=utf-8" }, 
                     body: JSON.stringify(payload) 
                 });
@@ -2503,8 +2567,6 @@
                 qrList[index].expDate = document.getElementById('modalQrExpText').value.trim();
                 
                 localStorage.setItem('k3_qr_list_unified_v13', JSON.stringify(qrList));
-                
-                // Otomatis Simpan ke Cloud
                 await saveMapPositions();
                 
                 closeQrEditModal();
@@ -2623,8 +2685,8 @@
                     photoBase64: photoBase64
                 };
 
-                await fetch(SCRIPT_URL, { method: "POST", headers: { "Content-Type": "text/plain;charset=utf-8" }, body: JSON.stringify(payload) });
-                alert("Data Inspeksi APAR berhasil disimpan!");
+                fetch(SCRIPT_URL, { method: "POST", mode: "no-cors", headers: { "Content-Type": "text/plain;charset=utf-8" }, body: JSON.stringify(payload) });
+                alert("Data Inspeksi APAR berhasil dikirim ke server!");
                 document.getElementById('aparFormElem').reset();
                 clearPhotoSelection();
                 setAutomaticDates();
@@ -2654,7 +2716,7 @@
                     photoBase64: photoBase64
                 };
 
-                await fetch(SCRIPT_URL, { method: "POST", headers: { "Content-Type": "text/plain;charset=utf-8" }, body: JSON.stringify(payload) });
+                fetch(SCRIPT_URL, { method: "POST", mode: "no-cors", headers: { "Content-Type": "text/plain;charset=utf-8" }, body: JSON.stringify(payload) });
                 alert("Laporan Temuan berhasil dikirim!");
                 event.target.reset(); setAutomaticDates(); generateTemuanId();
             } catch(e) { alert("Gagal mengirim."); }
@@ -2680,7 +2742,7 @@
                     photoBase64: photoBase64
                 };
 
-                await fetch(SCRIPT_URL, { method: "POST", headers: { "Content-Type": "text/plain;charset=utf-8" }, body: JSON.stringify(payload) });
+                fetch(SCRIPT_URL, { method: "POST", mode: "no-cors", headers: { "Content-Type": "text/plain;charset=utf-8" }, body: JSON.stringify(payload) });
                 alert("Tindak lanjut berhasil disimpan!");
                 event.target.reset();
                 document.getElementById('selectedTemuanPreview').classList.add('hidden');
@@ -2710,16 +2772,21 @@
                     photoBase64: photoBase64
                 };
 
-                await fetch(SCRIPT_URL, { method: "POST", headers: { "Content-Type": "text/plain;charset=utf-8" }, body: JSON.stringify(payload) });
+                fetch(SCRIPT_URL, { method: "POST", mode: "no-cors", headers: { "Content-Type": "text/plain;charset=utf-8" }, body: JSON.stringify(payload) });
                 alert("Permintaan APD berhasil diajukan!");
                 event.target.reset(); setAutomaticDates();
             } catch(e) { alert("Gagal mengajukan."); }
             finally { btn.disabled = false; btn.textContent = "Ajukan Permintaan APD"; }
         }
 
-        async function loadReportData() {
+        async function loadReportData(forceRefresh = false) {
             const tbody = document.getElementById('reportTableBody');
-            tbody.innerHTML = `<tr><td colspan="11" class="p-3 text-center text-slate-500">Memuat rekap...</td></tr>`;
+            
+            if (!forceRefresh && globalAparList && globalAparList.length > 0) {
+                processAndRenderReportTable(globalAparList);
+            } else {
+                tbody.innerHTML = `<tr><td colspan="11" class="p-3 text-center text-slate-500">Memuat rekap...</td></tr>`;
+            }
 
             const now = new Date();
             const todayFormatted = formatDateIndo(now);
@@ -2729,105 +2796,150 @@
                 const res = await fetch(SCRIPT_URL + "?action=apar");
                 const result = await res.json();
                 if (result.records) {
-                    let rawRecords = result.records;
-                    const threeYearsAgoTime = new Date().setFullYear(now.getFullYear() - 3);
-                    let filteredByRetention = rawRecords.filter(r => {
+                    globalAparList = result.records;
+                    localStorage.setItem('k3_cached_apar_records', JSON.stringify(globalAparList));
+                    processAndRenderReportTable(globalAparList);
+                }
+            } catch(e) {
+                if(!globalAparList || globalAparList.length === 0) {
+                    tbody.innerHTML = `<tr><td colspan="11" class="p-3 text-center text-red-500">Gagal memuat rekap.</td></tr>`;
+                }
+            }
+        }
+
+        function processAndRenderReportTable(rawRecords) {
+            const tbody = document.getElementById('reportTableBody');
+            const now = new Date();
+            const todayFormatted = formatDateIndo(now);
+
+            const threeYearsAgoTime = new Date().setFullYear(now.getFullYear() - 3);
+            let filteredByRetention = rawRecords.filter(r => {
+                let checkDateStr = r[0] || '';
+                let d = new Date(checkDateStr);
+                if (isNaN(d.getTime())) return true;
+                return d.getTime() >= threeYearsAgoTime;
+            });
+
+            // GABUNGKAN / KELOMPOKKAN BERDASARKAN KODE APAR AGAR MUNCUL HANYA 1 DATA PALING TERAKHIR PER APAR
+            let latestMap = new Map();
+            filteredByRetention.forEach((r, origIdx) => {
+                let code = r[1] ? String(r[1]).trim().toLowerCase() : "";
+                if (code) {
+                    // Karena baris terbaru berada di bawah, kita timpa terus agar map berisi baris terakhir/paling baru
+                    latestMap.set(code, { record: r, originalIndex: origIdx });
+                }
+            });
+
+            let dedupedRecords = [];
+            latestMap.forEach(val => {
+                dedupedRecords.push(val);
+            });
+
+            const mode = document.getElementById('filterMode').value;
+            let finalRecords = [];
+            let titleText = "LAPORAN REKAPITULASI INSPEKSI APAR";
+
+            if (mode === 'monthly') {
+                const selectedMonthVal = document.getElementById('filterMonth').value;
+                if (selectedMonthVal) {
+                    finalRecords = dedupedRecords.filter(item => {
+                        let r = item.record;
                         let checkDateStr = r[0] || '';
                         let d = new Date(checkDateStr);
-                        if (isNaN(d.getTime())) return true;
-                        return d.getTime() >= threeYearsAgoTime;
-                    });
-
-                    const mode = document.getElementById('filterMode').value;
-                    let finalRecords = [];
-                    let titleText = "LAPORAN REKAPITULASI INSPEKSI APAR";
-
-                    if (mode === 'monthly') {
-                        const selectedMonthVal = document.getElementById('filterMonth').value;
-                        if (selectedMonthVal) {
-                            finalRecords = filteredByRetention.filter(r => {
-                                let checkDateStr = r[0] || '';
-                                return checkDateStr && checkDateStr.startsWith(selectedMonthVal);
-                            });
-                            const [yr, mth] = selectedMonthVal.split('-');
-                            const monthNames = ["Jan", "Feb", "Mar", "Apr", "Mei", "Jun", "Jul", "Ags", "Sep", "Okt", "Nov", "Des"];
-                            titleText = `LAPORAN REKAPITULASI APAR BULAN ${monthNames[parseInt(mth)-1].toUpperCase()} ${yr}`;
+                        if (!isNaN(d.getTime())) {
+                            let recYr = d.getFullYear();
+                            let recMth = String(d.getMonth() + 1).padStart(2, '0');
+                            let recYearMonth = `${recYr}-${recMth}`;
+                            return recYearMonth === selectedMonthVal;
                         } else {
-                            finalRecords = filteredByRetention;
+                            return checkDateStr.startsWith(selectedMonthVal);
                         }
-                    } else {
-                        const semVal = document.getElementById('filterSemester').value;
-                        const semYear = document.getElementById('filterSemesterYear').value;
-                        finalRecords = filteredByRetention.filter(r => {
-                            let checkDateStr = r[0] || '';
-                            if(!checkDateStr) return false;
-                            let d = new Date(checkDateStr);
-                            if (d.getFullYear().toString() !== semYear) return false;
-                            let m = d.getMonth() + 1;
-                            if (semVal === "1") return m >= 1 && m <= 6;
-                            else return m >= 7 && m <= 12;
-                        });
-                        titleText = `LAPORAN REKAPITULASI APAR SEMESTER ${semVal} TAHUN ${semYear}`;
-                    }
-
-                    document.getElementById('reportTitleHeader').textContent = titleText;
-                    if(document.getElementById('reportDate')) document.getElementById('reportDate').textContent = `Dicetak: ${todayFormatted}`;
-
-                    globalAparList = finalRecords;
-                    document.getElementById('statTotal').textContent = finalRecords.length;
-                    document.getElementById('statLayak').textContent = finalRecords.filter(r => r[14] === 'LAYAK').length;
-                    document.getElementById('statPerbaikan').textContent = finalRecords.length - finalRecords.filter(r => r[14] === 'LAYAK').length;
-
-                    tbody.innerHTML = "";
-                    if(finalRecords.length === 0) {
-                        tbody.innerHTML = `<tr><td colspan="11" class="p-3 text-center text-slate-500 italic">Tidak ada data.</td></tr>`;
-                        return;
-                    }
-
-                    finalRecords.forEach((r, idx) => {
-                        let waktuInputPretty = formatDateTimePretty(r[0]);
-                        let aparCode = r[1] || 'APAR';
-                        let lokasiArea = r[2] || '-';
-                        
-                        let conditions = [];
-                        if (r[7] && r[7] !== 'Normal') conditions.push(`Tekanan: <b>${r[7]}</b>`);
-                        if (r[8] && r[8] !== 'Terpasang & Tersegel') conditions.push(`Pin: <b>${r[8]}</b>`);
-                        if (r[9] && !r[9].toLowerCase().includes('bagus')) conditions.push(`Selang: <b>${r[9]}</b>`);
-                        if (r[10] && !r[10].toLowerCase().includes('bagus')) conditions.push(`Tabung: <b>${r[10]}</b>`);
-                        if (r[11] && !r[11].toLowerCase().includes('kuat')) conditions.push(`Bracket: <b>${r[11]}</b>`);
-                        if (r[12] && !r[12].toLowerCase().includes('ada')) conditions.push(`Kartu: <b>${r[12]}</b>`);
-
-                        let kondisiFisikStr = conditions.length > 0 ? conditions.join(' | ') : '<span class="text-emerald-600 font-semibold">Normal / Layak</span>';
-
-                        let akses = r[13] || '-';
-                        let statusKelayakan = r[14] || 'LAYAK';
-                        let catatanRekomendasi = r[15] || '-';
-                        let namaPetugas = r[16] || '-';
-
-                        let fotoImg = r[17] ? `<button onclick="openPhotoPreviewModal('${r[17]}', '${aparCode}', '${waktuInputPretty}')" class="inline-block group focus:outline-none" title="Klik untuk Preview & Download Foto"><img src="${r[17]}" class="w-16 h-16 object-cover rounded-xl border border-slate-300 mx-auto shadow-sm group-hover:scale-110 transition cursor-pointer"></button>` : '-';
-
-                        tbody.innerHTML += `
-                            <tr class="border-b hover:bg-slate-50 transition">
-                                <td class="p-2.5 border-b text-center">${idx + 1}</td>
-                                <td class="p-2.5 border-b text-center">${waktuInputPretty}</td>
-                                <td class="p-2.5 border-b text-center font-bold">${aparCode}</td>
-                                <td class="p-2.5 border-b text-center">${lokasiArea}</td>
-                                <td class="p-2.5 border-b text-center text-[10px] leading-relaxed max-w-xs">${kondisiFisikStr}</td>
-                                <td class="p-2.5 border-b text-center">${akses}</td>
-                                <td class="p-2.5 border-b text-center"><span class="px-2 py-0.5 rounded text-[9px] font-bold ${statusKelayakan === 'LAYAK' ? 'bg-emerald-100 text-emerald-800' : 'bg-red-100 text-red-800'}">${statusKelayakan}</span></td>
-                                <td class="p-2.5 border-b text-center text-[10px]">${catatanRekomendasi}</td>
-                                <td class="p-2.5 border-b text-center">${namaPetugas}</td>
-                                <td class="p-2.5 border-b text-center">${fotoImg}</td>
-                                <td class="p-2.5 border-b text-center no-print">
-                                    <div class="flex items-center justify-center gap-1.5 flex-wrap">
-                                        <button onclick="openEditModal(${idx})" class="bg-amber-600 hover:bg-amber-700 text-white px-2.5 py-1 rounded-xl text-[10px] font-semibold transition shadow whitespace-nowrap">✏️ Edit</button>
-                                        <button onclick="deleteAparRecord(${idx})" class="bg-red-600 hover:bg-red-700 text-white px-2.5 py-1 rounded-xl text-[10px] font-semibold transition shadow whitespace-nowrap">🗑️ Hapus</button>
-                                    </div>
-                                </td>
-                            </tr>`;
                     });
+                    const [yr, mth] = selectedMonthVal.split('-');
+                    const monthNames = ["Jan", "Feb", "Mar", "Apr", "Mei", "Jun", "Jul", "Ags", "Sep", "Okt", "Nov", "Des"];
+                    titleText = `LAPORAN REKAPITULASI APAR BULAN ${monthNames[parseInt(mth)-1].toUpperCase()} ${yr}`;
+                } else {
+                    finalRecords = dedupedRecords;
                 }
-            } catch(e) { tbody.innerHTML = `<tr><td colspan="11" class="p-3 text-center text-red-500">Gagal memuat rekap.</td></tr>`; }
+            } else {
+                const semVal = document.getElementById('filterSemester').value;
+                const semYear = document.getElementById('filterSemesterYear').value;
+                finalRecords = dedupedRecords.filter(item => {
+                    let r = item.record;
+                    let checkDateStr = r[0] || '';
+                    if(!checkDateStr) return false;
+                    let d = new Date(checkDateStr);
+                    if (isNaN(d.getTime())) return checkDateStr.includes(semYear);
+                    if (d.getFullYear().toString() !== semYear) return false;
+                    let m = d.getMonth() + 1;
+                    if (semVal === "1") return m >= 1 && m <= 6;
+                    else return m >= 7 && m <= 12;
+                });
+                titleText = `LAPORAN REKAPITULASI APAR SEMESTER ${semVal} TAHUN ${semYear}`;
+            }
+
+            document.getElementById('reportTitleHeader').textContent = titleText;
+            if(document.getElementById('reportDate')) document.getElementById('reportDate').textContent = `Dicetak: ${todayFormatted}`;
+
+            document.getElementById('statTotal').textContent = finalRecords.length;
+            document.getElementById('statLayak').textContent = finalRecords.filter(item => item.record[14] === 'LAYAK').length;
+            document.getElementById('statPerbaikan').textContent = finalRecords.length - finalRecords.filter(item => item.record[14] === 'LAYAK').length;
+
+            tbody.innerHTML = "";
+            if(finalRecords.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="11" class="p-3 text-center text-slate-500 italic">Tidak ada data.</td></tr>`;
+                return;
+            }
+
+            finalRecords.forEach((item, idx) => {
+                let r = item.record;
+                let originalIndex = item.originalIndex;
+                let waktuInputPretty = formatDateTimePretty(r[0]);
+                let aparCode = r[1] || 'APAR';
+                let lokasiArea = r[2] || '-';
+                
+                let conditions = [];
+                if (r[7] && r[7] !== 'Normal') conditions.push(`Tekanan: <b>${r[7]}</b>`);
+                if (r[8] && r[8] !== 'Terpasang & Tersegel') conditions.push(`Pin: <b>${r[8]}</b>`);
+                if (r[9] && !r[9].toLowerCase().includes('bagus')) conditions.push(`Selang: <b>${r[9]}</b>`);
+                if (r[10] && !r[10].toLowerCase().includes('bagus')) conditions.push(`Tabung: <b>${r[10]}</b>`);
+                if (r[11] && !r[11].toLowerCase().includes('kuat')) conditions.push(`Bracket: <b>${r[11]}</b>`);
+                if (r[12] && !r[12].toLowerCase().includes('ada')) conditions.push(`Kartu: <b>${r[12]}</b>`);
+
+                let kondisiFisikStr = conditions.length > 0 ? conditions.join(' | ') : '<span class="text-emerald-600 font-semibold">Normal / Layak</span>';
+
+                let akses = r[13] || '-';
+                let statusKelayakan = r[14] || 'LAYAK';
+                
+                // BERSIHKAN TEKS CATATAN DARI TAG REKENING/UPDATE BERULANG AGAR HANYA MENAMPILKAN TEKS TERAKHIR
+                let rawNotes = r[15] || '-';
+                let cleanNotes = rawNotes.replace(/\[Telah di-update oleh Admin[^\]]*\]/g, '').trim();
+                let catatanRekomendasi = cleanNotes !== "" ? cleanNotes : "-";
+
+                let namaPetugas = r[16] || '-';
+
+                let fotoImg = r[17] ? `<button onclick="openPhotoPreviewModal('${r[17]}', '${aparCode}', '${waktuInputPretty}')" class="inline-block group focus:outline-none" title="Klik untuk Preview & Download Foto"><img src="${r[17]}" class="w-16 h-16 object-cover rounded-xl border border-slate-300 mx-auto shadow-sm group-hover:scale-110 transition cursor-pointer"></button>` : '-';
+
+                tbody.innerHTML += `
+                    <tr class="border-b hover:bg-slate-50 transition">
+                        <td class="p-2.5 border-b text-center">${idx + 1}</td>
+                        <td class="p-2.5 border-b text-center">${waktuInputPretty}</td>
+                        <td class="p-2.5 border-b text-center font-bold">${aparCode}</td>
+                        <td class="p-2.5 border-b text-center">${lokasiArea}</td>
+                        <td class="p-2.5 border-b text-center text-[10px] leading-relaxed max-w-xs">${kondisiFisikStr}</td>
+                        <td class="p-2.5 border-b text-center">${akses}</td>
+                        <td class="p-2.5 border-b text-center"><span class="px-2 py-0.5 rounded text-[9px] font-bold ${statusKelayakan === 'LAYAK' ? 'bg-emerald-100 text-emerald-800' : 'bg-red-100 text-red-800'}">${statusKelayakan}</span></td>
+                        <td class="p-2.5 border-b text-center text-[10px]">${catatanRekomendasi}</td>
+                        <td class="p-2.5 border-b text-center">${namaPetugas}</td>
+                        <td class="p-2.5 border-b text-center">${fotoImg}</td>
+                        <td class="p-2.5 border-b text-center no-print">
+                            <div class="flex items-center justify-center gap-1.5 flex-wrap">
+                                <button onclick="openEditModal(${originalIndex})" class="bg-amber-600 hover:bg-amber-700 text-white px-2.5 py-1 rounded-xl text-[10px] font-semibold transition shadow whitespace-nowrap">✏️ Edit</button>
+                                <button onclick="deleteAparRecord(${originalIndex})" class="bg-red-600 hover:bg-red-700 text-white px-2.5 py-1 rounded-xl text-[10px] font-semibold transition shadow whitespace-nowrap">🗑️ Hapus</button>
+                            </div>
+                        </td>
+                    </tr>`;
+            });
         }
 
         function openManualAddAparModal() {
@@ -2870,10 +2982,10 @@
                     photoBase64: ""
                 };
 
-                await fetch(SCRIPT_URL, { method: "POST", headers: { "Content-Type": "text/plain;charset=utf-8" }, body: JSON.stringify(payload) });
+                fetch(SCRIPT_URL, { method: "POST", mode: "no-cors", headers: { "Content-Type": "text/plain;charset=utf-8" }, body: JSON.stringify(payload) });
                 alert("Data berhasil ditambahkan secara manual!");
                 closeManualAddAparModal();
-                setTimeout(loadReportData, 1500);
+                setTimeout(() => loadReportData(true), 1200);
             } catch(e) { alert("Gagal menambahkan data."); }
             finally { btn.disabled = false; btn.textContent = "Simpan & Tambah"; }
         }
@@ -2895,8 +3007,9 @@
                     };
 
                     deletedAparHistoryStack.push(data);
+                    localStorage.setItem('k3_deleted_apar_stack', JSON.stringify(deletedAparHistoryStack));
 
-                    await fetch(SCRIPT_URL, { 
+                    fetch(SCRIPT_URL, { 
                         method: "POST", 
                         mode: "no-cors",
                         headers: { "Content-Type": "text/plain;charset=utf-8" }, 
@@ -2906,10 +3019,10 @@
                     alert(`Perintah hapus untuk APAR ${aparCode} dikirim ke server...`);
                     
                     setTimeout(async () => {
-                        await loadReportData();
+                        await loadReportData(true);
                         await fetchAparDataAndRenderMaps();
-                        alert(`Data pengecekan ${aparCode} berhasil dihapus dari Spreadsheet & Webapps!`);
-                    }, 2000);
+                        alert(`Data pengecekan ${aparCode} berhasil dihapus dari Spreadsheet & Webapps! (Tekan Ctrl+Z jika ingin membatalkan/Undo)`);
+                    }, 1500);
 
                 } catch(e) {
                     alert("Gagal menghapus data dari server.");
@@ -2927,6 +3040,8 @@
             }
         }
 
+        let editModalMarkPhotoDeleted = false;
+
         function openEditModal(index) {
             const data = globalAparList[index];
             if(!data) return;
@@ -2935,7 +3050,11 @@
             document.getElementById('editStatus').value = data[14] || 'LAYAK';
             document.getElementById('editAccess').value = data[13] || 'Bebas / Tidak Terhalang';
             
-            const existingNotes = data[15] || "Perbaikan / Refill Tekanan (Pressure Gauge)";
+            // Bersihkan teks catatan lama agar saat edit di modal tidak menampilkan rentetan tag update
+            let rawNotes = data[15] || "Perbaikan / Refill Tekanan (Pressure Gauge)";
+            let existingNotes = rawNotes.replace(/\[Telah di-update oleh Admin[^\]]*\]/g, '').trim();
+            if(!existingNotes) existingNotes = "Perbaikan / Refill Tekanan (Pressure Gauge)";
+
             const selectEl = document.getElementById('editRekomendasiSelect');
             const customInput = document.getElementById('editRekomendasiCustom');
 
@@ -2949,13 +3068,26 @@
             }
 
             document.getElementById('editPhotoFile').value = ""; 
+            editModalMarkPhotoDeleted = false;
+
             const previewContainer = document.getElementById('currentPhotoPreviewContainer');
             if (data[17]) {
-                previewContainer.innerHTML = `<span class="text-slate-600 font-semibold">Foto:</span> <img src="${data[17]}" class="w-12 h-12 object-cover rounded-xl border shadow-sm">`;
+                previewContainer.innerHTML = `
+                    <div class="flex items-center gap-2">
+                        <img src="${data[17]}" class="w-12 h-12 object-cover rounded-xl border shadow-sm">
+                        <span class="text-xs font-bold text-slate-800">Foto Tersimpan</span>
+                    </div>
+                    <button type="button" onclick="markEditPhotoAsDeleted()" class="bg-red-600 hover:bg-red-700 text-white px-2.5 py-1.5 rounded-lg text-[10px] font-bold transition shadow">🗑️ Hapus Foto</button>
+                `;
             } else {
-                previewContainer.innerHTML = `<span class="text-red-500 font-semibold">⚠️ Belum ada foto.</span>`;
+                previewContainer.innerHTML = `<span class="text-xs text-red-500 font-semibold">⚠️ Belum ada foto dokumentasi.</span>`;
             }
             document.getElementById('editAparModal').classList.remove('hidden');
+        }
+
+        function markEditPhotoAsDeleted() {
+            editModalMarkPhotoDeleted = true;
+            document.getElementById('currentPhotoPreviewContainer').innerHTML = `<span class="text-xs text-red-600 font-bold">🗑️ Foto akan dihapus saat disimpan.</span>`;
         }
 
         function closeEditModal() { document.getElementById('editAparModal').classList.add('hidden'); }
@@ -2968,26 +3100,53 @@
             try {
                 const data = globalAparList[idx];
                 if(data) {
-                    let photoBase64 = "";
-                    const fileInput = document.getElementById('editPhotoFile');
-                    if (fileInput.files[0]) photoBase64 = await getBase64(fileInput.files[0]);
+                    let photoBase64 = data[17] || ""; 
+                    if (editModalMarkPhotoDeleted) {
+                        photoBase64 = "";
+                    }
 
-                    const finalNotes = document.getElementById('editRekomendasiCustom').value.trim() || document.getElementById('editRekomendasiSelect').value;
+                    const fileInput = document.getElementById('editPhotoFile');
+                    if (fileInput.files && fileInput.files[0]) {
+                        photoBase64 = await getBase64(fileInput.files[0]);
+                    }
+
+                    const rawNotes = document.getElementById('editRekomendasiCustom').value.trim() || document.getElementById('editRekomendasiSelect').value;
+                    
+                    const now = new Date();
+                    const day = String(now.getDate()).padStart(2, '0');
+                    const month = String(now.getMonth() + 1).padStart(2, '0');
+                    const year = now.getFullYear();
+                    const hours = String(now.getHours()).padStart(2, '0');
+                    const minutes = String(now.getMinutes()).padStart(2, '0');
+
+                    const updateInfoTag = `[Telah di-update oleh Admin pada ${day}/${month}/${year} pukul ${hours}:${minutes} WIB]`;
+                    const finalNotes = `${updateInfoTag} ${rawNotes}`;
 
                     const payload = {
                         action: "updateApar",
-                        rowIndex: idx,
                         code: data[1],
-                        status: document.getElementById('editStatus').value,
+                        location: data[2],
+                        type: data[3],
+                        capacity: data[4],
+                        pressureType: data[5],
+                        expDate: data[6],
+                        pressure: data[7],
+                        pin: data[8],
+                        hose: data[9],
+                        body: data[10],
+                        hanger: data[11],
+                        tag: data[12],
                         access: document.getElementById('editAccess').value,
+                        status: document.getElementById('editStatus').value,
                         notes: finalNotes,
+                        inspector: data[16] || "Admin",
                         photoBase64: photoBase64
                     };
 
-                    await fetch(SCRIPT_URL, { method: "POST", headers: { "Content-Type": "text/plain;charset=utf-8" }, body: JSON.stringify(payload) });
-                    alert("Evaluasi diperbarui!");
+                    fetch(SCRIPT_URL, { method: "POST", mode: "no-cors", headers: { "Content-Type": "text/plain;charset=utf-8" }, body: JSON.stringify(payload) });
+                    alert("Evaluasi dan update berhasil disimpan sebagai baris baru!");
                     closeEditModal();
-                    setTimeout(loadReportData, 1500);
+                    setTimeout(() => loadReportData(true), 1500);
                     fetchAparDataAndRenderMaps();
                 }
             } catch(e) { alert("Gagal memperbarui."); }
