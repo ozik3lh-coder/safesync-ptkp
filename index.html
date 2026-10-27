@@ -1070,7 +1070,7 @@
         </div>
     </div>
 
-    <!-- SCRIPT UTAMA INTEGRASI SINKRONISASI CLOUD & OPTIMASI PERFORMA -->
+    <!-- SCRIPT UTAMA INTEGRASI SINKRONISASI CLOUD & AUTO-SYNC REAL-TIME -->
     <script>
         const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxqUmvno_IsO9PMKIA6DaRkvPtNs6TZ0vMGpfsFLjwtiLZwpmxEKYz0c-MYkmNu2pPlog/exec";
         let currentUser = JSON.parse(localStorage.getItem('k3_current_user')) || null;
@@ -1122,6 +1122,58 @@
             initBackupQrListStorage();
             initStatusYearOptions();
             await fetchAparDataAndRenderMaps();
+
+            // SINKRONISASI OTOMATIS REAL-TIME (BACKGROUND POLLING SETIAP 6 DETIK)
+            setInterval(async () => {
+                try {
+                    // Cek pembaharuan master APAR diam-diam di background
+                    const resMaster = await fetch(SCRIPT_URL + "?action=masterApar");
+                    const jsonMaster = await resMaster.json();
+                    if (jsonMaster.records && jsonMaster.records.length > 0) {
+                        let newServerList = jsonMaster.records;
+                        // Bandingkan stringify untuk mendeteksi perubahan dari device lain
+                        if (JSON.stringify(newServerList) !== JSON.stringify(qrList)) {
+                            qrList = newServerList;
+                            localStorage.setItem('k3_qr_list_unified_v13', JSON.stringify(qrList));
+                            
+                            // Update tampilan tabel profile / peta secara otomatis jika sedang dibuka
+                            const profileTable = document.getElementById('aparProfileTableBody');
+                            if (profileTable && !document.getElementById('tabAparQrCode').classList.contains('hidden')) {
+                                const activeSubTab = document.getElementById('qrSubTableContainer');
+                                if (activeSubTab && !activeSubTab.classList.contains('hidden')) {
+                                    renderAparProfileTable(qrList);
+                                    renderAdminMapMarkers();
+                                }
+                            }
+                            renderPublicMapMarkers();
+                            renderStatusMapMarkers();
+                        }
+                    }
+
+                    // Cek pembaharuan data rekap inspeksi APAR
+                    const resApar = await fetch(SCRIPT_URL + "?action=apar");
+                    const jsonApar = await resApar.json();
+                    if (jsonApar.records) {
+                        let newAparRecords = jsonApar.records;
+                        if (JSON.stringify(newAparRecords) !== JSON.stringify(globalAparList)) {
+                            globalAparList = newAparRecords;
+                            localStorage.setItem('k3_cached_apar_records', JSON.stringify(globalAparList));
+                            
+                            // Jika halaman rekap atau status sedang aktif, auto-refresh tampilan tabelnya
+                            const reportTab = document.getElementById('tabAparReport');
+                            if (reportTab && !reportTab.classList.contains('hidden')) {
+                                processAndRenderReportTable(globalAparList);
+                            }
+                            const statusTab = document.getElementById('tabAparStatusList');
+                            if (statusTab && !statusTab.classList.contains('hidden')) {
+                                loadKaryawanAparStatus();
+                            }
+                        }
+                    }
+                } catch(err) {
+                    // Abaikan error jaringan sementara saat background sync
+                }
+            }, 6000);
 
             window.addEventListener('keydown', async (e) => {
                 if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'z') {
@@ -1198,6 +1250,7 @@
                 const result = await res.json();
                 if (result.records && result.records.length > 0) {
                     qrList = result.records;
+                    qrList.sort((a, b) => Number(a.id) - Number(b.id));
                     localStorage.setItem('k3_qr_list_unified_v13', JSON.stringify(qrList));
                 } else if(qrList.length === 0) {
                     qrList = [];
@@ -1218,6 +1271,7 @@
                             y: parseFloat(defaultY.toFixed(1))
                         });
                     }
+                    qrList.sort((a, b) => Number(a.id) - Number(b.id));
                     localStorage.setItem('k3_qr_list_unified_v13', JSON.stringify(qrList));
                     fetch(SCRIPT_URL, {
                         method: "POST",
@@ -1655,6 +1709,7 @@
 
         function renderAparProfileTable(dataArray) {
             const tbody = document.getElementById('aparProfileTableBody');
+            if(!tbody) return;
             tbody.innerHTML = "";
             dataArray.forEach((item, index) => {
                 let realIndex = qrList.findIndex(q => q.id === item.id);
@@ -2379,8 +2434,8 @@
         function addNewAparMarker() {
             let maxId = 0;
             qrList.forEach(q => {
-                if (q.id > maxId) {
-                    maxId = q.id;
+                if (Number(q.id) > maxId) {
+                    maxId = Number(q.id);
                 }
             });
             let nextId = maxId + 1;
@@ -2401,6 +2456,7 @@
             };
 
             qrList.push(newAparItem);
+            qrList.sort((a, b) => Number(a.id) - Number(b.id));
             activeMapEditIndex = nextId;
             localStorage.setItem('k3_qr_list_unified_v13', JSON.stringify(qrList));
             
@@ -2428,7 +2484,7 @@
                 return;
             }
 
-            let existingActive = qrList.find(q => q.id === newId && q.id !== target.id);
+            let existingActive = qrList.find(q => Number(q.id) === newId && Number(q.id) !== Number(target.id));
             if(existingActive) {
                 alert(`Nomor titik ${newId} sedang digunakan oleh ${existingActive.code}!`);
                 return;
@@ -2443,6 +2499,7 @@
             target.code = `APAR-${String(newId).padStart(3, '0')}`;
             activeMapEditIndex = newId;
 
+            qrList.sort((a, b) => Number(a.id) - Number(b.id));
             localStorage.setItem('k3_qr_list_unified_v13', JSON.stringify(qrList));
             renderAparProfileTable(qrList);
             renderAdminMapMarkers();
@@ -2466,8 +2523,8 @@
                     return;
                 }
                 if (confirm(`Hapus ${selectedMarkerIdsForDeletion.size} titik APAR yang dipilih?`)) {
-                    let idsToRemove = Array.from(selectedMarkerIdsForDeletion);
-                    qrList = qrList.filter(q => !idsToRemove.includes(q.id));
+                    let idsToRemove = Array.from(selectedMarkerIdsForDeletion).map(id => Number(id));
+                    qrList = qrList.filter(q => !idsToRemove.includes(Number(q.id)));
 
                     localStorage.setItem('k3_qr_list_unified_v13', JSON.stringify(qrList));
                     selectedMarkerIdsForDeletion.clear();
@@ -2493,7 +2550,7 @@
                     return; 
                 }
                 
-                let targetIndex = qrList.findIndex(q => q.id === parseInt(activeMapEditIndex));
+                let targetIndex = qrList.findIndex(q => Number(q.id) === Number(activeMapEditIndex));
                 if(targetIndex === -1) {
                     alert("Data titik APAR tidak ditemukan.");
                     return;
@@ -2517,6 +2574,7 @@
         }
 
         async function saveMapPositions() {
+            qrList.sort((a, b) => Number(a.id) - Number(b.id));
             localStorage.setItem('k3_qr_list_unified_v13', JSON.stringify(qrList));
             
             try {
@@ -2566,6 +2624,7 @@
                 qrList[index].pressureType = document.getElementById('modalQrPressureText').value;
                 qrList[index].expDate = document.getElementById('modalQrExpText').value.trim();
                 
+                qrList.sort((a, b) => Number(a.id) - Number(b.id));
                 localStorage.setItem('k3_qr_list_unified_v13', JSON.stringify(qrList));
                 await saveMapPositions();
                 
@@ -2609,6 +2668,7 @@
 
         function renderApdStock() {
             const grid = document.getElementById('apdStockGrid');
+            if(!grid) return;
             grid.innerHTML = "";
             apdCatalog.forEach((item, idx) => {
                 let editableInput = currentUser && currentUser.role === 'admin' 
@@ -2781,6 +2841,7 @@
 
         async function loadReportData(forceRefresh = false) {
             const tbody = document.getElementById('reportTableBody');
+            if(!tbody) return;
             
             if (!forceRefresh && globalAparList && globalAparList.length > 0) {
                 processAndRenderReportTable(globalAparList);
@@ -2809,6 +2870,7 @@
 
         function processAndRenderReportTable(rawRecords) {
             const tbody = document.getElementById('reportTableBody');
+            if(!tbody) return;
             const now = new Date();
             const todayFormatted = formatDateIndo(now);
 
@@ -2820,12 +2882,10 @@
                 return d.getTime() >= threeYearsAgoTime;
             });
 
-            // GABUNGKAN / KELOMPOKKAN BERDASARKAN KODE APAR AGAR MUNCUL HANYA 1 DATA PALING TERAKHIR PER APAR
             let latestMap = new Map();
             filteredByRetention.forEach((r, origIdx) => {
                 let code = r[1] ? String(r[1]).trim().toLowerCase() : "";
                 if (code) {
-                    // Karena baris terbaru berada di bawah, kita timpa terus agar map berisi baris terakhir/paling baru
                     latestMap.set(code, { record: r, originalIndex: origIdx });
                 }
             });
@@ -2911,7 +2971,6 @@
                 let akses = r[13] || '-';
                 let statusKelayakan = r[14] || 'LAYAK';
                 
-                // BERSIHKAN TEKS CATATAN DARI TAG REKENING/UPDATE BERULANG AGAR HANYA MENAMPILKAN TEKS TERAKHIR
                 let rawNotes = r[15] || '-';
                 let cleanNotes = rawNotes.replace(/\[Telah di-update oleh Admin[^\]]*\]/g, '').trim();
                 let catatanRekomendasi = cleanNotes !== "" ? cleanNotes : "-";
@@ -3050,7 +3109,6 @@
             document.getElementById('editStatus').value = data[14] || 'LAYAK';
             document.getElementById('editAccess').value = data[13] || 'Bebas / Tidak Terhalang';
             
-            // Bersihkan teks catatan lama agar saat edit di modal tidak menampilkan rentetan tag update
             let rawNotes = data[15] || "Perbaikan / Refill Tekanan (Pressure Gauge)";
             let existingNotes = rawNotes.replace(/\[Telah di-update oleh Admin[^\]]*\]/g, '').trim();
             if(!existingNotes) existingNotes = "Perbaikan / Refill Tekanan (Pressure Gauge)";
@@ -3155,6 +3213,7 @@
 
         async function loadTemuanData() {
             const tbody = document.getElementById('temuanTableBody');
+            if(!tbody) return;
             tbody.innerHTML = `<tr><td colspan="5" class="p-3 text-center text-slate-500">Memuat...</td></tr>`;
             try {
                 const res = await fetch(SCRIPT_URL + "?action=temuan");
@@ -3193,6 +3252,7 @@
 
         async function loadTemuanOptionsForTl() {
             const select = document.getElementById('tlTemuanSelect');
+            if(!select) return;
             select.innerHTML = `<option value="">-- Memuat ID --</option>`;
             try {
                 const res = await fetch(SCRIPT_URL + "?action=temuan");
