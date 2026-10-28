@@ -458,7 +458,7 @@
                 <!-- MODUL PROFIL, LABEL QR & PETA (ADMIN) -->
                 <div id="tabAparQrCode" class="hidden space-y-4">
                     <div class="flex gap-2 no-print bg-white p-3 rounded-2xl shadow-lg border overflow-x-auto">
-                        <button onclick="switchQrSubTab('table')" id="btnQrSubTable" class="bg-red-700 hover:bg-red-800 text-white px-3.5 py-2 rounded-xl text-xs font-semibold whitespace-nowrap transition shadow-sm">📋 Master Profil APAR (97 Unit)</button>
+                        <button onclick="switchQrSubTab('table')" id="btnQrSubTable" class="bg-red-700 hover:bg-red-800 text-white px-3.5 py-2 rounded-xl text-xs font-semibold whitespace-nowrap transition shadow-sm">📋 Master Profil APAR</button>
                         <button onclick="switchQrSubTab('backupTable')" id="btnQrSubBackupTable" class="bg-slate-100 hover:bg-slate-200 text-slate-700 px-3.5 py-2 rounded-xl text-xs font-semibold whitespace-nowrap transition border">📋 APAR Cadangan</button>
                         <button onclick="switchQrSubTab('cards')" id="btnQrSubCards" class="bg-slate-100 hover:bg-slate-200 text-slate-700 px-3.5 py-2 rounded-xl text-xs font-semibold whitespace-nowrap transition border">🏷️ Cetak QR</button>
                     </div>
@@ -1028,6 +1028,7 @@
                         <label class="block font-semibold text-slate-700 mb-1">Exp *</label>
                         <input type="text" id="addMasterExp" value="Desember 2028" required class="w-full px-3 py-2 border rounded-xl shadow-sm">
                     </div>
+                    <div><label class="block font-semibold text-slate-700 mb-1">Lantai *</label><select id="addMasterFloor" class="w-full px-3 py-2 border rounded-xl shadow-sm bg-white"><option value="1">Lantai 1</option><option value="2">Lantai 2</option></select></div>
                 </div>
                 <div class="flex gap-2 pt-2">
                     <button type="submit" class="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-2.5 rounded-xl transition shadow">Simpan Master</button>
@@ -1079,6 +1080,7 @@
                         <label class="block font-semibold text-slate-700 mb-1">Exp *</label>
                         <input type="text" id="modalQrExpText" class="w-full px-3 py-2 border rounded-xl shadow-sm">
                     </div>
+                    <div><label class="block font-semibold text-slate-700 mb-1">Lantai *</label><select id="modalQrFloor" class="w-full px-3 py-2 border rounded-xl shadow-sm bg-white"><option value="1">Lantai 1</option><option value="2">Lantai 2</option></select></div>
                 </div>
                 <div class="flex gap-2 pt-2">
                     <button type="button" onclick="saveQrEdit()" class="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-2.5 rounded-xl transition shadow">Simpan</button>
@@ -1141,6 +1143,12 @@
 
     <!-- SCRIPT UTAMA INTEGRASI SINKRONISASI CLOUD & STABILITAS STATE -->
     <script>
+
+        const BLN_ID=['Januari','Februari','Maret','April','Mei','Juni','Juli','Agustus','September','Oktober','November','Desember'];
+        function normExp(v){ if(v==null||v==='') return v; const s=String(v).trim();
+            if(/^[A-Z][a-z]{2} [A-Z][a-z]{2} \d{1,2} \d{4}/.test(s)||/^\d{4}-\d{2}-\d{2}T/.test(s)){ const d=new Date(s); if(!isNaN(d)){ const w=new Date(d.getTime()+7*3600e3); return BLN_ID[w.getUTCMonth()]+' '+w.getUTCFullYear(); } }
+            return s; }
+        function normExpRec(r){ if(r&&r.expDate) r.expDate=normExp(r.expDate); if(r&&!r.floor) r.floor=1; return r; }
         const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxqUmvno_IsO9PMKIA6DaRkvPtNs6TZ0vMGpfsFLjwtiLZwpmxEKYz0c-MYkmNu2pPlog/exec";
         let currentUser = JSON.parse(localStorage.getItem('k3_current_user')) || null;
         let globalTemuanList = [];
@@ -1192,12 +1200,12 @@
 
             // POLLING BACKGROUND YANG AMAN
             setInterval(async () => {
-                if (isAdminMapEditMode || isDraggingMarker) return;
+                if (isAdminMapEditMode || isDraggingMarker || Date.now() < (window.masterHold||0)) return;
                 try {
                     const resMaster = await fetch(SCRIPT_URL + "?action=masterApar");
                     const jsonMaster = await resMaster.json();
                     if (jsonMaster.records && jsonMaster.records.length > 0) {
-                        let newServerList = jsonMaster.records;
+                        let newServerList = jsonMaster.records.map(normExpRec);
                         newServerList.sort((a, b) => Number(a.id) - Number(b.id));
                         if (JSON.stringify(newServerList) !== JSON.stringify(qrList)) {
                             qrList = newServerList;
@@ -1303,7 +1311,7 @@
             let savedLocal = localStorage.getItem('k3_qr_list_unified_v13');
             if (savedLocal) {
                 try { 
-                    qrList = JSON.parse(savedLocal); 
+                    qrList = JSON.parse(savedLocal).map(normExpRec); 
                     qrList.sort((a, b) => Number(a.id) - Number(b.id));
                 } catch(e){}
             }
@@ -1312,7 +1320,7 @@
                 const res = await fetch(SCRIPT_URL + "?action=masterApar");
                 const result = await res.json();
                 if (result.records && result.records.length > 0) {
-                    qrList = result.records;
+                    qrList = result.records.map(normExpRec);
                     qrList.sort((a, b) => Number(a.id) - Number(b.id));
                     localStorage.setItem('k3_qr_list_unified_v13', JSON.stringify(qrList));
                 } else if(qrList.length === 0) {
@@ -1850,6 +1858,7 @@
                 capacity: capacity,
                 pressureType: pressureType,
                 expDate: expDate,
+                floor: Number(document.getElementById('addMasterFloor').value) || 1,
                 x: 50.0,
                 y: 50.0
             });
@@ -2283,7 +2292,7 @@
 
                 marker.style.left = `${item.x || 50}%`;
                 marker.style.top = `${item.y || 50}%`;
-                marker.textContent = item.id;
+                marker.textContent = item.id; applyFloor(marker, item);
                 marker.onclick = (e) => { e.stopPropagation(); openAparDetailPopup(item.code); };
                 layer.appendChild(marker);
             });
@@ -2341,7 +2350,7 @@
 
                 marker.style.left = `${item.x || 50}%`;
                 marker.style.top = `${item.y || 50}%`;
-                marker.textContent = item.id;
+                marker.textContent = item.id; applyFloor(marker, item);
                 marker.onclick = (e) => { e.stopPropagation(); openAparDetailPopup(item.code); };
                 layer.appendChild(marker);
             });
@@ -2436,7 +2445,7 @@
                 marker.className = `map-marker absolute w-4 h-4 -ml-2 -mt-2 font-bold text-[8px] rounded-full flex items-center justify-center shadow border-2 border-white transition z-20 ${cursorStyle} ${colorClass}`;
                 marker.style.left = `${item.x || 50}%`;
                 marker.style.top = `${item.y || 50}%`;
-                marker.textContent = item.id;
+                marker.textContent = item.id; applyFloor(marker, item);
                 
                 if (isAdminMapEditMode) {
                     marker.onmousedown = (e) => {
@@ -2578,7 +2587,7 @@
             document.getElementById('modalQrTypeText').value = item.type;
             document.getElementById('modalQrCapText').value = item.capacity;
             document.getElementById('modalQrPressureText').value = item.pressureType || 'Manometer';
-            document.getElementById('modalQrExpText').value = item.expDate || 'Desember 2028';
+            document.getElementById('modalQrExpText').value = item.expDate || 'Desember 2028'; document.getElementById('modalQrFloor').value = item.floor || 1;
             document.getElementById('editQrModal').classList.remove('hidden');
         }
 
@@ -2592,7 +2601,7 @@
                 qrList[index].type = document.getElementById('modalQrTypeText').value;
                 qrList[index].capacity = document.getElementById('modalQrCapText').value.trim();
                 qrList[index].pressureType = document.getElementById('modalQrPressureText').value;
-                qrList[index].expDate = document.getElementById('modalQrExpText').value.trim();
+                qrList[index].expDate = document.getElementById('modalQrExpText').value.trim(); qrList[index].floor = Number(document.getElementById('modalQrFloor').value) || 1;
                 
                 qrList.sort((a, b) => Number(a.id) - Number(b.id));
                 localStorage.setItem('k3_qr_list_unified_v13', JSON.stringify(qrList));
@@ -3166,7 +3175,7 @@
                         type: data[3],
                         capacity: data[4],
                         pressureType: data[5],
-                        expDate: data[6],
+                        expDate: normExp(data[6]),
                         pressure: data[7],
                         pin: data[8],
                         hose: data[9],
@@ -3272,6 +3281,10 @@
 <script>
 (()=>{
 const A=SCRIPT_URL,$=id=>document.getElementById(id);
+const DEPTS=['Departemen Pemasaran','Akuntansi','SDM','Keuangan','Dafasum','TKPRSMT','SPPS','Risbang','Labdalitas','K3LH','SPI','PPPP','Produksi','Teknik'];
+const deptVal=()=>$('pjTipe').value==='Vendor'?$('pjDept').value.trim():$('pjDeptSel').value;
+window.pjTipeCh=()=>{const v=$('pjTipe').value==='Vendor';$('pjDeptSel').classList.toggle('hidden',v);$('pjDeptSel').required=!v;$('pjDept').classList.toggle('hidden',!v);$('pjDept').required=v};
+const _f=window.fetch;window.fetch=function(u,o){try{if(o&&typeof o.body==='string'&&o.body.indexOf('"saveMasterApar"')>0)window.masterHold=Date.now()+25000}catch(e){}return _f.apply(this,arguments)};
 let S={master:[],loans:[],topAll:[],topMonth:[],stats:{}},topMode='topMonth',flash='',dirty=false,shellRole='',
     mine=JSON.parse(localStorage.getItem('pjMine')||'[]');
 const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
@@ -3320,8 +3333,8 @@ function buildShell(){
 <form onsubmit="pjSend(event)" class="space-y-3 text-xs"><div class="grid grid-cols-1 md:grid-cols-3 gap-3">
 <div><label class="block font-semibold text-slate-600 mb-1">Nama *</label><input id="pjNama" required class="w-full px-3.5 py-2.5 border rounded-xl shadow-sm"></div>
 <div><label class="block font-semibold text-slate-600 mb-1">Nomor Register *</label><input id="pjReg" required class="w-full px-3.5 py-2.5 border rounded-xl shadow-sm"></div>
-<div><label class="block font-semibold text-slate-600 mb-1">Departemen / Seksi *</label><input id="pjDept" required class="w-full px-3.5 py-2.5 border rounded-xl shadow-sm"></div>
-<div><label class="block font-semibold text-slate-600 mb-1">Status Peminjam</label><select id="pjTipe" class="w-full px-3.5 py-2.5 border rounded-xl bg-white shadow-sm"><option>Karyawan</option><option>Vendor</option></select></div>
+<div><label class="block font-semibold text-slate-600 mb-1">Departemen / Seksi *</label><select id="pjDeptSel" required class="w-full px-3.5 py-2.5 border rounded-xl bg-white shadow-sm"><option value="">— Pilih Departemen / Seksi —</option>${DEPTS.map(d=>`<option>${d}</option>`).join('')}</select><input id="pjDept" placeholder="Vendor: ketik nama perusahaan / bagian" class="hidden w-full px-3.5 py-2.5 border rounded-xl shadow-sm"></div>
+<div><label class="block font-semibold text-slate-600 mb-1">Status Peminjam</label><select id="pjTipe" onchange="pjTipeCh()" class="w-full px-3.5 py-2.5 border rounded-xl bg-white shadow-sm"><option>Karyawan</option><option>Vendor</option></select></div>
 <div class="md:col-span-2"><label class="block font-semibold text-slate-600 mb-1">Alasan Keperluan APD *</label><input id="pjAlasan" required class="w-full px-3.5 py-2.5 border rounded-xl shadow-sm"></div></div>
 <div><label class="block font-semibold text-slate-600 mb-1">APD yang dipinjam * <span class="font-normal text-slate-400">(bisa lebih dari 1 jenis)</span></label><div id="pjItems" class="space-y-2"></div><button type="button" onclick="pjAddRow()" class="mt-2 px-3 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 font-bold text-slate-700">＋ Tambah Jenis APD</button></div>
 <p class="text-[11px] text-slate-500 bg-slate-50 border rounded-xl p-2.5">Tanggal &amp; jam peminjaman tercatat <b>otomatis</b> oleh sistem saat dikirim.</p>
@@ -3331,7 +3344,7 @@ function buildShell(){
 <div class="border-t pt-3 grid grid-cols-2 md:grid-cols-5 gap-2 text-xs"><input id="nkKat" placeholder="Jenis APD baru *" class="px-3 py-2 border rounded-xl col-span-2"><input id="nkVar" placeholder="Ukuran/varian (opsional)" class="px-3 py-2 border rounded-xl"><input id="nkIkon" placeholder="Ikon 🦺" maxlength="4" class="px-3 py-2 border rounded-xl"><input id="nkStok" type="number" min="0" placeholder="Stok *" class="px-3 py-2 border rounded-xl"><button onclick="pjAddType()" class="col-span-2 md:col-span-5 bg-red-600 hover:bg-red-700 text-white font-bold py-2.5 rounded-xl">＋ Tambah Jenis APD</button></div></div>`;
  $('apdNew').innerHTML=tabs+`<div id="pjMain" class="space-y-4">${adm?adminPanel+stock+live:stock+form+live}</div>`;
  if(adm){const t=new Date(),z=n=>('0'+n).slice(-2);$('rpTo').value=`${t.getFullYear()}-${z(t.getMonth()+1)}-${z(t.getDate())}`;$('rpFrom').value=`${t.getFullYear()}-${z(t.getMonth()+1)}-01`}
- if(!adm){const w=JSON.parse(localStorage.getItem('pjWho')||'null');if(w){$('pjNama').value=w.n;$('pjReg').value=w.r;$('pjDept').value=w.d;$('pjTipe').value=w.t}pjAddRow()}
+ if(!adm){const w=JSON.parse(localStorage.getItem('pjWho')||'null');if(w){$('pjNama').value=w.n;$('pjReg').value=w.r;$('pjTipe').value=w.t;pjTipeCh();if(w.t==='Vendor')$('pjDept').value=w.d;else $('pjDeptSel').value=DEPTS.includes(w.d)?w.d:''}pjTipeCh();pjAddRow()}
 }
 window.apdEnter=()=>{if(shellRole!==currentUser.role||!$('pjMain'))buildShell();dirty=false;pjTab(0);apdLoad()};
 window.pjTab=i=>{TABS.forEach((_,k)=>{$('pjT'+k).className='whitespace-nowrap px-3.5 py-2 rounded-xl font-bold '+(k===i?'bg-red-600 text-white shadow':k?'bg-slate-100 text-slate-400':'bg-slate-100 text-slate-700')});$('pjMain').classList.toggle('hidden',i>0);$('pjDev').classList.toggle('hidden',i===0);$('pjDevName').textContent=TABS[i]};
@@ -3346,7 +3359,7 @@ window.pjSend=async e=>{e.preventDefault();const it={};
  const items=Object.entries(it).map(([id,jumlah])=>({id,jumlah}));if(!items.length)return toast('Pilih minimal 1 APD.',0);
  for(const x of items){const m=S.master.find(m=>m.id===x.id);if(x.jumlah>m.tersedia)return toast(`Stok ${nm(m)} tinggal ${m.tersedia}.`,0)}
  const f=id=>$(id).value.trim(),b=$('pjSendBtn');b.disabled=true;b.textContent='Mengirim…';
- try{const p={action:'apdCreate',nama:f('pjNama'),reg:f('pjReg'),dept:f('pjDept'),tipe:$('pjTipe').value,alasan:f('pjAlasan'),items};
+ try{const p={action:'apdCreate',nama:f('pjNama'),reg:f('pjReg'),dept:deptVal(),tipe:$('pjTipe').value,alasan:f('pjAlasan'),items};
   const r=await post(p);if(!r.ok)throw new Error(r.msg);
   localStorage.setItem('pjWho',JSON.stringify({n:p.nama,r:p.reg,d:p.dept,t:p.tipe}));mine.push(r.kode);localStorage.setItem('pjMine',JSON.stringify(mine.slice(-30)));
   flash=r.kode;toast('✅ Tercatat: '+r.kode);$('pjItems').innerHTML='';pjAddRow();$('pjAlasan').value='';await apdLoad();setTimeout(()=>flash='',3000)
@@ -3429,6 +3442,31 @@ setInterval(()=>{if($('loginPage').classList.contains('hidden')||document.hidden
 setInterval(()=>{if(document.hidden)return;const pub=!$('loginPage').classList.contains('hidden'),mod=currentUser&&!$('modulApd').classList.contains('hidden');if(pub||mod)apdLoad()},5000);
 $('pubPrev').onclick=()=>pubGo(ci-1);$('pubNext').onclick=()=>pubGo(ci+1);pubGo(0);apdLoad();
 })();
+</script>
+<style>.fl2{border-radius:3px!important;outline:2px solid #2563eb;outline-offset:1px}.fl2::after{content:'2';position:absolute;top:-8px;right:-8px;background:#2563eb;color:#fff;font-size:7px;font-weight:800;line-height:1;padding:1px 2.5px;border-radius:4px}
+.fl-bar{position:absolute;top:10px;left:10px;z-index:30;display:flex;flex-direction:column;gap:6px;align-items:flex-start}
+.fl-pill{display:flex;gap:2px;padding:3px;border-radius:9999px;background:rgba(255,255,255,.82);-webkit-backdrop-filter:blur(6px);backdrop-filter:blur(6px);box-shadow:0 2px 10px rgba(15,23,42,.25);border:1px solid rgba(255,255,255,.7)}
+.fl-btn{width:30px;height:30px;border-radius:9999px;display:flex;align-items:center;justify-content:center;color:#475569;border:0;background:transparent;cursor:pointer;transition:all .2s}
+.fl-btn:hover{background:rgba(185,28,28,.1);color:#b91c1c}.fl-btn.on{background:#b91c1c;color:#fff;box-shadow:0 2px 6px rgba(185,28,28,.45)}
+.fl-i{width:16px;height:16px;border:1.8px solid currentColor;display:inline-flex;align-items:center;justify-content:center;font-size:10px;font-weight:800;line-height:1}
+.fl-tip{font-size:11px;font-weight:600;color:#fff;background:rgba(15,23,42,.88);padding:5px 10px;border-radius:9px;max-width:230px;opacity:0;transform:translateY(-4px);transition:all .25s;pointer-events:none}.fl-tip.show{opacity:1;transform:none}</style>
+<script>
+window.floorFilter='all';
+const FL_IC={all:'<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2 2 7l10 5 10-5-10-5z"/><path d="m2 12 10 5 10-5"/><path d="m2 17 10 5 10-5"/></svg>','1':'<span class="fl-i" style="border-radius:50%">1</span>','2':'<span class="fl-i" style="border-radius:4px">2</span>'};
+const FL_MSG={all:'Menampilkan semua APAR (Lantai 1 & 2)','1':'Lantai 1 — titik APAR berbentuk bulat','2':'Lantai 2 — titik APAR berbentuk kotak, bergaris biru & berlabel 2'};
+let flTimer;
+function applyFloor(m,item){const f=Number(item.floor)||1;m.dataset.floor=f;if(f===2)m.classList.add('fl2');if(floorFilter!=='all'&&String(f)!==floorFilter)m.style.display='none'}
+function setFloor(v,tip){floorFilter=v;document.querySelectorAll('.map-marker[data-floor]').forEach(m=>m.style.display=(v==='all'||m.dataset.floor===v)?'':'none');
+ document.querySelectorAll('.fl-btn').forEach(b=>b.classList.toggle('on',b.dataset.v===v));
+ document.querySelectorAll('.fl-tip').forEach(t=>{t.textContent=FL_MSG[v];t.classList.toggle('show',!!tip)});
+ clearTimeout(flTimer);if(tip)flTimer=setTimeout(()=>document.querySelectorAll('.fl-tip').forEach(t=>t.classList.remove('show')),2800)}
+['publicMarkersLayer','statusMarkersLayer','adminMarkersLayer'].forEach(id=>{const l=document.getElementById(id);if(!l||!l.parentElement)return;const w=l.parentElement;
+ if(getComputedStyle(w).position==='static')w.style.position='relative';
+ const bar=document.createElement('div');bar.className='fl-bar';
+ bar.innerHTML='<div class="fl-pill">'+['all','1','2'].map(k=>'<button type="button" class="fl-btn" data-v="'+k+'" title="'+FL_MSG[k]+'" onclick="setFloor(\''+k+'\',true)">'+FL_IC[k]+'</button>').join('')+'</div><div class="fl-tip"></div>';
+ ['mousedown','touchstart','click','pointerdown'].forEach(ev=>bar.addEventListener(ev,e=>e.stopPropagation()));
+ w.appendChild(bar)});
+setFloor('all');
 </script>
 </body>
 </html>
