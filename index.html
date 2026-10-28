@@ -42,6 +42,11 @@
             .table-container { overflow: visible !important; width: 100% !important; }
             table { min-width: 100% !important; width: 100% !important; }
         }
+
+        .pub-arrow{position:absolute;top:50%;transform:translateY(-50%);z-index:20;width:40px;height:40px;border-radius:9999px;display:flex;align-items:center;justify-content:center;font-size:20px;color:#fff;background:rgba(15,23,42,.18);opacity:.4;transition:all .2s;border:0;cursor:pointer}
+        .pub-arrow:hover,.pub-arrow:focus-visible,.pub-arrow:active{opacity:1;background:#b91c1c;font-weight:900;box-shadow:0 4px 14px rgba(0,0,0,.35);transform:translateY(-50%) scale(1.12)}
+        .pub-dot{width:8px;height:8px;border-radius:9999px;background:#cbd5e1;transition:all .3s;border:0;cursor:pointer}.pub-dot.on{width:22px;background:#b91c1c}
+        .pj-flash{animation:pjf 3s ease-out}@keyframes pjf{0%{background:#bbf7d0}100%{background:transparent}}
     </style>
 </head>
 <body class="bg-white font-sans min-h-screen pb-12">
@@ -67,7 +72,7 @@
             </div>
         </header>
 
-        <main class="max-w-7xl mx-auto px-4 mt-4 flex-1 w-full space-y-4">
+        <main class="max-w-7xl mx-auto px-4 mt-4 flex-1 w-full space-y-4"><div class="relative"><div id="pubViewport" class="overflow-hidden" style="transition:height .4s"><div id="pubTrack" class="flex items-start" style="transition:transform .6s ease"><div class="pub-slide w-full min-w-full shrink-0">
             <div class="bg-white rounded-2xl shadow-lg p-4 md:p-6 border border-slate-100 space-y-3">
                 <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-3 border-b border-slate-100 pb-3">
                     <div>
@@ -96,7 +101,18 @@
                     </div>
                 </div>
             </div>
-        </main>
+        </div><div class="pub-slide w-full min-w-full shrink-0">
+<div class="bg-white rounded-2xl shadow-lg p-4 md:p-6 border border-slate-100 space-y-4">
+ <div class="flex justify-between items-start gap-2 border-b border-slate-100 pb-3"><div><h2 class="text-sm md:text-lg font-bold text-slate-900">🦺 Dashboard Peminjaman APD</h2><p class="text-[11px] text-slate-500">Ketersediaan APD, live record peminjaman, dan peminjam teraktif.</p></div><span id="pubLive" class="text-[10px] font-bold text-emerald-600 whitespace-nowrap">● LIVE</span></div>
+ <div id="pubStock" class="grid grid-cols-2 md:grid-cols-4 gap-3"></div>
+ <div class="grid md:grid-cols-3 gap-4">
+  <div class="md:col-span-2"><h3 class="text-xs font-bold text-slate-800 mb-2">📋 Live Record Peminjaman</h3><div class="table-container border rounded-xl"><table class="w-full text-xs min-w-[520px]"><thead class="bg-slate-100 text-slate-600"><tr><th class="px-2 py-2 text-left">Waktu</th><th class="px-2 py-2 text-left">Peminjam</th><th class="px-2 py-2 text-left">Dept/Seksi</th><th class="px-2 py-2 text-left">APD</th><th class="px-2 py-2 text-left">Status</th></tr></thead><tbody id="pubLoans"></tbody></table></div></div>
+  <div><div class="flex justify-between items-center mb-2"><h3 class="text-xs font-bold text-slate-800">🏆 TOP 5 Peminjam APD</h3><div class="flex gap-1"><button data-top="topMonth" onclick="pubTop('topMonth')">Bulan ini</button><button data-top="topAll" onclick="pubTop('topAll')">Semua</button></div></div><ol id="pubTop" class="space-y-2.5"></ol></div>
+ </div></div></div></div></div>
+ <button class="pub-arrow left-2" aria-label="Sebelumnya" id="pubPrev">&#10094;</button>
+ <button class="pub-arrow right-2" aria-label="Berikutnya" id="pubNext">&#10095;</button>
+ <div class="flex justify-center gap-2 mt-3"><button class="pub-dot on" onclick="pubGo(0)" aria-label="Dashboard APAR"></button><button class="pub-dot" onclick="pubGo(1)" aria-label="Dashboard Peminjaman APD"></button></div></div>
+</main>
     </div>
 
     <!-- MODAL POPUP LOGIN -->
@@ -705,7 +721,7 @@
             </div>
 
             <!-- MODUL 3: STOK APD -->
-            <div id="modulApd" class="hidden space-y-4">
+            <div id="modulApd" class="hidden space-y-4"><div id="apdNew" class="space-y-4"></div><div id="apdLegacyHidden" class="hidden">
                 <div class="bg-white rounded-2xl shadow-lg p-5 md:p-6 border border-slate-100 space-y-3" id="adminApdStockSection">
                     <div class="flex justify-between items-center border-b pb-2 flex-wrap gap-2">
                         <h2 class="text-sm md:text-lg font-bold text-slate-800">Manajemen Stok APD PT Kertas Padalarang</h2>
@@ -735,7 +751,7 @@
                         <button type="submit" id="submitApdBtn" class="w-full bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white font-bold py-3 rounded-xl transition shadow-md">Ajukan Permintaan APD</button>
                     </form>
                 </div>
-            </div>
+            </div></div>
 
             <!-- MODUL PESAN TERKUNCI (UNDER DEVELOPMENT) -->
             <div id="modulLocked" class="hidden space-y-4">
@@ -779,7 +795,7 @@
                             <p class="text-[10px] text-slate-500">Centang opsi di bawah jika ingin membuka akses modul Temuan & APD agar dapat diakses oleh akun Karyawan.</p>
                             <div class="flex items-center gap-2 pt-1">
                                 <input type="checkbox" id="featureUnlockedToggle" class="w-4 h-4 text-red-600 rounded border-slate-300 focus:ring-red-500">
-                                <label for="featureUnlockedToggle" class="font-semibold text-slate-700 cursor-pointer">Buka Akses Fitur Temuan & APD untuk Karyawan</label>
+                                <label for="featureUnlockedToggle" class="font-semibold text-slate-700 cursor-pointer">Buka Akses Fitur Temuan untuk Karyawan (Peminjaman APD selalu aktif)</label>
                             </div>
                         </div>
 
@@ -1534,7 +1550,7 @@
                 }
             });
 
-            if ((modul === 'temuan' || modul === 'apd') && currentUser.role !== 'admin') {
+            if (modul === 'temuan' && currentUser.role !== 'admin') {
                 let isUnlocked = appCredentials.karyawan && appCredentials.karyawan.featuresUnlocked;
                 if (!isUnlocked) {
                     document.getElementById('modulLocked').classList.remove('hidden');
@@ -1551,7 +1567,7 @@
                 if(currentUser.role === 'admin') switchTemuanTab('report');
                 else { switchTemuanTab('form'); loadTemuanOptionsForTl(); }
             } else if (modul === 'apd') { 
-                document.getElementById('modulApd').classList.remove('hidden'); 
+                document.getElementById('modulApd').classList.remove('hidden'); apdEnter(); 
             } else if (modul === 'profile') { 
                 if(currentUser.role !== 'admin') return;
                 document.getElementById('modulProfile').classList.remove('hidden'); 
@@ -3253,5 +3269,127 @@
 
         function stopScanner() { if(html5QrCode) html5QrCode.stop().then(() => document.getElementById('reader-container').classList.add('hidden')).catch(()=>{}); }
     </script>
+<script>
+(()=>{
+const A=SCRIPT_URL,$=id=>document.getElementById(id);
+let S={master:[],loans:[],topAll:[],topMonth:[],stats:{}},topMode='topMonth',flash='',dirty=false,shellRole='',
+    mine=JSON.parse(localStorage.getItem('pjMine')||'[]');
+const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const fmt=i=>i?new Date(i).toLocaleString('id-ID',{timeZone:'Asia/Jakarta',day:'2-digit',month:'short',hour:'2-digit',minute:'2-digit',hour12:false}).replace(/\./g,':'):'-';
+const nm=m=>m.kategori+(m.varian&&m.varian!=='-'?' — '+m.varian:'');
+const isAdm=()=>currentUser&&currentUser.role==='admin';
+const post=async p=>{const r=await(await fetch(A,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify(p)})).json();if(r.ok===undefined)throw new Error('Server belum memuat modul APD. Tempel Code.gs terbaru lalu Deploy > New version.');return r};
+const toast=(m,ok=1)=>{const d=document.createElement('div');d.className='fixed bottom-5 left-1/2 -translate-x-1/2 z-[60] px-4 py-2.5 rounded-xl text-xs font-bold text-white shadow-lg '+(ok?'bg-emerald-600':'bg-red-600');d.textContent=m;document.body.appendChild(d);setTimeout(()=>d.remove(),3500)};
+const shrink=f=>new Promise(r=>{const i=new Image();i.onload=()=>{const k=Math.min(1,900/Math.max(i.width,i.height)),c=document.createElement('canvas');c.width=i.width*k;c.height=i.height*k;c.getContext('2d').drawImage(i,0,0,c.width,c.height);r(c.toDataURL('image/jpeg',.7))};i.src=URL.createObjectURL(f)});
+const badge=s=>s==='DIPINJAM'?'<span class="px-2 py-0.5 rounded-full bg-amber-100 text-amber-700 font-bold">Dipinjam</span>':s==='DIKEMBALIKAN'?'<span class="px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-700 font-bold">Dikembalikan</span>':'<span class="px-2 py-0.5 rounded-full bg-slate-200 text-slate-600 font-bold">Batal</span>';
+const itemsTxt=l=>l.items.map(i=>`${esc(i.kategori)}${i.varian&&i.varian!=='-'?' '+esc(i.varian):''} ×${i.jumlah}`).join(', ');
+const TH=x=>`<thead class="bg-slate-100 text-slate-600"><tr><th class="px-2 py-2 text-left">Waktu</th><th class="px-2 py-2 text-left">Peminjam</th><th class="px-2 py-2 text-left">Dept/Seksi</th><th class="px-2 py-2 text-left">APD</th><th class="px-2 py-2 text-left">Status</th>${x?'<th></th>':''}</tr></thead>`;
+
+function groups(){const g={};S.master.filter(m=>m.aktif).forEach(m=>{const o=g[m.kategori]=g[m.kategori]||{k:m.kategori,ikon:m.ikon,t:0,a:0,v:[]};o.t+=m.total;o.a+=m.tersedia;o.v.push(m)});return Object.values(g)}
+const stockHTML=()=>groups().map(g=>{const p=g.t?Math.round(g.a/g.t*100):0,c=g.a<=0?'bg-red-500':p<30?'bg-amber-400':'bg-emerald-500';
+return `<div class="bg-slate-50 border rounded-2xl p-3 shadow-sm"><div class="flex items-center gap-2"><span class="text-2xl">${esc(g.ikon)}</span><div class="min-w-0"><p class="text-[11px] font-bold text-slate-700 leading-tight">${esc(g.k)}</p><p class="text-lg font-extrabold ${g.a<=0?'text-red-600':'text-slate-900'}">${g.a}<span class="text-[10px] font-semibold text-slate-400"> / ${g.t} pcs</span></p></div></div><div class="h-1.5 bg-slate-200 rounded-full mt-2 overflow-hidden"><div class="h-full ${c}" style="width:${p}%"></div></div>${g.v.length>1||g.v[0].varian!=='-'?`<div class="flex flex-wrap gap-1 mt-2">${g.v.map(m=>`<span class="px-1.5 py-0.5 rounded-md bg-white border text-[10px] font-semibold">${esc(m.varian)}: ${m.tersedia}</span>`).join('')}</div>`:''}</div>`}).join('')||'<p class="text-xs text-slate-400">Memuat data…</p>';
+
+function rowsHTML(n,mode){return S.loans.slice(0,n).map(l=>{const my=mine.includes(l.kode),click=mode==='adm'||(mode==='emp'&&l.status==='DIPINJAM');
+return `<tr ${click?`onclick="pjOpen('${l.kode}')"`:''} class="border-t ${click?'cursor-pointer hover:bg-red-50':''} ${my?'bg-amber-50/60':''} ${l.kode===flash?'pj-flash':''}"><td class="px-2 py-2 whitespace-nowrap">${fmt(l.waktu)}</td><td class="px-2 py-2 font-semibold">${esc(l.nama)}${my?' <span class="text-[9px] text-amber-700">(Anda)</span>':''}${mode==='pub'?'':`<div class="text-[10px] font-normal text-slate-400">${esc(l.reg)}</div>`}</td><td class="px-2 py-2">${esc(l.dept)}</td><td class="px-2 py-2">${itemsTxt(l)}</td><td class="px-2 py-2 whitespace-nowrap">${badge(l.status)}${l.kembali?`<div class="text-[10px] text-slate-400">${fmt(l.kembali)}</div>`:''}</td>${mode==='pub'?'':`<td class="px-2 py-2 text-[11px] font-bold text-red-700 whitespace-nowrap">${mode==='adm'?'Detail ›':l.status==='DIPINJAM'?'Kembalikan ›':''}</td>`}</tr>`}).join('')||'<tr><td colspan="6" class="text-center py-6 text-slate-400">Belum ada data peminjaman.</td></tr>'}
+
+const topHTML=()=>{const a=S[topMode]||[];return a.map((t,i)=>`<li class="flex items-center gap-2"><span class="w-6 h-6 shrink-0 rounded-full ${i<3?'bg-red-600 text-white':'bg-slate-200'} text-[11px] font-bold flex items-center justify-center">${i+1}</span><div class="flex-1 min-w-0"><p class="text-xs font-semibold truncate">${esc(t.nama)} <span class="font-normal text-slate-400">· ${esc(t.dept)}</span></p><div class="h-1.5 bg-slate-100 rounded-full"><div class="h-full bg-red-500 rounded-full" style="width:${t.n/a[0].n*100}%"></div></div></div><span class="text-xs font-bold">${t.n}×</span></li>`).join('')||'<li class="text-xs text-slate-400">Belum ada data.</li>'};
+
+function admMaster(){if(dirty||!$('pjMaster'))return;$('pjMaster').innerHTML=S.master.map(m=>`<tr data-mid="${m.id}" class="border-t"><td class="px-2 py-2">${esc(m.ikon)} <b>${esc(m.kategori)}</b> <span class="text-slate-500">${esc(m.varian)}</span></td><td class="px-2"><input type="number" min="0" value="${m.total}" oninput="pjDirty()" class="mt w-20 px-2 py-1 border rounded-lg text-center font-bold"></td><td class="px-2 text-center">${m.dipinjam}</td><td class="px-2 text-center font-bold">${m.tersedia}</td><td class="px-2 text-center"><input type="checkbox" class="ma" ${m.aktif?'checked':''} onchange="pjDirty()"></td></tr>`).join('')}
+
+function renderAll(){
+ $('pubStock').innerHTML=stockHTML();$('pubLoans').innerHTML=rowsHTML(12,'pub');$('pubTop').innerHTML=topHTML();
+ $('pubLive').textContent='● LIVE · '+new Date().toLocaleTimeString('id-ID',{timeZone:'Asia/Jakarta',hour12:false}).replace(/\./g,':');
+ document.querySelectorAll('[data-top]').forEach(b=>b.className='px-2 py-1 rounded-lg text-[10px] font-bold '+(b.dataset.top===topMode?'bg-red-600 text-white':'bg-slate-100 text-slate-600'));
+ if(!$('pjStock'))return;
+ $('pjStock').innerHTML=stockHTML();$('pjLive').innerHTML=rowsHTML(isAdm()?60:25,isAdm()?'adm':'emp');
+ document.querySelectorAll('.pj-sel').forEach(s=>{if(s!==document.activeElement)fillSel(s)});
+ if(isAdm()){admMaster();$('pjStats').innerHTML=[['Sedang dipinjam',S.stats.aktif],['Transaksi hari ini',S.stats.hariIni],['Total transaksi',S.stats.total]].map(x=>`<div class="bg-slate-50 border rounded-2xl p-3 text-center"><p class="text-2xl font-extrabold text-red-700">${x[1]??0}</p><p class="text-[11px] text-slate-500">${x[0]}</p></div>`).join('')}
+}
+async function apdLoad(){try{const r=await(await fetch(A+'?action=apdState&_='+Date.now())).json();if(r&&r.ok){S=r;renderAll()}else $('pubLive').textContent='○ Backend belum diperbarui'}catch(e){$('pubLive').textContent='○ Offline'}}
+window.pubTop=m=>{topMode=m;renderAll()};
+
+/* ---------- Shell modul APD (beda tampilan karyawan vs admin) ---------- */
+const card='bg-white rounded-2xl shadow-lg p-4 md:p-6 border border-slate-100 space-y-3';
+const TABS=['Peminjaman APD','Permintaan APD','Serah Terima APD','SPB APD','Safety Stock APD'];
+function buildShell(){
+ shellRole=currentUser.role;const adm=isAdm();
+ const tabs=`<div class="${card} !p-3 flex gap-2 overflow-x-auto text-xs">${TABS.map((t,i)=>`<button onclick="pjTab(${i})" id="pjT${i}" class="whitespace-nowrap px-3.5 py-2 rounded-xl font-bold">${t}${i?' 🚧':''}</button>`).join('')}</div><div id="pjDev" class="${card} hidden text-center py-10"><p class="text-4xl">🚧</p><p class="font-bold text-slate-700 mt-2" id="pjDevName"></p><p class="text-xs text-slate-500">Fitur ini masih dalam tahap pengembangan.</p></div>`;
+ const live=`<div class="${card}"><div class="flex justify-between items-center flex-wrap gap-1"><h2 class="text-sm md:text-base font-bold text-slate-800">🔴 Live Record Peminjaman APD</h2><span class="text-[10px] font-bold text-emerald-600">● realtime (auto-refresh 5 dtk)</span></div><p class="text-[11px] text-slate-500">${adm?'Klik baris untuk melihat detail, bukti pengembalian, atau membatalkan.':'Data Anda langsung muncul di sini. Untuk mengembalikan APD, <b>klik baris Anda</b> berstatus Dipinjam.'}</p><div class="table-container"><table class="w-full text-xs min-w-[640px]">${TH(1)}<tbody id="pjLive"></tbody></table></div></div>`;
+ const stock=`<div class="${card}"><h2 class="text-sm md:text-base font-bold text-slate-800">📦 Ketersediaan APD <span class="text-[10px] text-emerald-600">● realtime</span></h2><div id="pjStock" class="grid grid-cols-2 md:grid-cols-4 gap-3"></div></div>`;
+ const form=`<div class="${card}"><div class="flex justify-between items-center flex-wrap gap-1"><h2 class="text-sm md:text-base font-bold text-slate-800">📝 Formulir Peminjaman APD</h2><span class="text-[11px] text-slate-500">⏱ <span id="pjClock"></span></span></div>
+<form onsubmit="pjSend(event)" class="space-y-3 text-xs"><div class="grid grid-cols-1 md:grid-cols-3 gap-3">
+<div><label class="block font-semibold text-slate-600 mb-1">Nama *</label><input id="pjNama" required class="w-full px-3.5 py-2.5 border rounded-xl shadow-sm"></div>
+<div><label class="block font-semibold text-slate-600 mb-1">Nomor Register *</label><input id="pjReg" required class="w-full px-3.5 py-2.5 border rounded-xl shadow-sm"></div>
+<div><label class="block font-semibold text-slate-600 mb-1">Departemen / Seksi *</label><input id="pjDept" required class="w-full px-3.5 py-2.5 border rounded-xl shadow-sm"></div>
+<div><label class="block font-semibold text-slate-600 mb-1">Status Peminjam</label><select id="pjTipe" class="w-full px-3.5 py-2.5 border rounded-xl bg-white shadow-sm"><option>Karyawan</option><option>Vendor</option></select></div>
+<div class="md:col-span-2"><label class="block font-semibold text-slate-600 mb-1">Alasan Keperluan APD *</label><input id="pjAlasan" required class="w-full px-3.5 py-2.5 border rounded-xl shadow-sm"></div></div>
+<div><label class="block font-semibold text-slate-600 mb-1">APD yang dipinjam * <span class="font-normal text-slate-400">(bisa lebih dari 1 jenis)</span></label><div id="pjItems" class="space-y-2"></div><button type="button" onclick="pjAddRow()" class="mt-2 px-3 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 font-bold text-slate-700">＋ Tambah Jenis APD</button></div>
+<p class="text-[11px] text-slate-500 bg-slate-50 border rounded-xl p-2.5">Tanggal &amp; jam peminjaman tercatat <b>otomatis</b> oleh sistem saat dikirim.</p>
+<button id="pjSendBtn" class="w-full bg-gradient-to-r from-red-600 to-red-700 text-white font-bold py-3 rounded-xl shadow-md">Pinjam APD</button></form></div>`;
+ const adminPanel=`<div id="pjStats" class="grid grid-cols-3 gap-3"></div><div class="${card}"><div class="flex justify-between items-center flex-wrap gap-2"><h2 class="text-sm md:text-base font-bold text-slate-800">⚙️ Kelola Jumlah &amp; Jenis APD</h2><button onclick="pjSaveStok()" class="bg-emerald-600 hover:bg-emerald-700 text-white px-3.5 py-2 rounded-xl text-xs font-semibold shadow">Simpan Perubahan</button></div>
+<div class="table-container"><table class="w-full text-xs min-w-[480px]"><thead class="bg-slate-100 text-slate-600"><tr><th class="px-2 py-2 text-left">APD</th><th>Stok Total</th><th>Dipinjam</th><th>Tersedia</th><th>Aktif</th></tr></thead><tbody id="pjMaster"></tbody></table></div>
+<div class="border-t pt-3 grid grid-cols-2 md:grid-cols-5 gap-2 text-xs"><input id="nkKat" placeholder="Jenis APD baru *" class="px-3 py-2 border rounded-xl col-span-2"><input id="nkVar" placeholder="Ukuran/varian (opsional)" class="px-3 py-2 border rounded-xl"><input id="nkIkon" placeholder="Ikon 🦺" maxlength="4" class="px-3 py-2 border rounded-xl"><input id="nkStok" type="number" min="0" placeholder="Stok *" class="px-3 py-2 border rounded-xl"><button onclick="pjAddType()" class="col-span-2 md:col-span-5 bg-red-600 hover:bg-red-700 text-white font-bold py-2.5 rounded-xl">＋ Tambah Jenis APD</button></div></div>`;
+ $('apdNew').innerHTML=tabs+`<div id="pjMain" class="space-y-4">${adm?adminPanel+stock+live:stock+form+live}</div>`;
+ if(!adm){const w=JSON.parse(localStorage.getItem('pjWho')||'null');if(w){$('pjNama').value=w.n;$('pjReg').value=w.r;$('pjDept').value=w.d;$('pjTipe').value=w.t}pjAddRow()}
+}
+window.apdEnter=()=>{if(shellRole!==currentUser.role||!$('pjMain'))buildShell();dirty=false;pjTab(0);apdLoad()};
+window.pjTab=i=>{TABS.forEach((_,k)=>{$('pjT'+k).className='whitespace-nowrap px-3.5 py-2 rounded-xl font-bold '+(k===i?'bg-red-600 text-white shadow':k?'bg-slate-100 text-slate-400':'bg-slate-100 text-slate-700')});$('pjMain').classList.toggle('hidden',i>0);$('pjDev').classList.toggle('hidden',i===0);$('pjDevName').textContent=TABS[i]};
+window.pjDirty=()=>dirty=true;
+setInterval(()=>{const c=$('pjClock');if(c)c.textContent=new Date().toLocaleString('id-ID',{timeZone:'Asia/Jakarta',dateStyle:'full',timeStyle:'medium',hour12:false}).replace(/\./g,':')},1000);
+
+/* ---------- Form peminjaman (multi-jenis) ---------- */
+function fillSel(s){const v=s.value;s.innerHTML='<option value="">— Pilih jenis APD —</option>'+S.master.filter(m=>m.aktif).map(m=>`<option value="${m.id}" ${m.tersedia<=0?'disabled':''}>${esc(m.ikon)} ${esc(nm(m))} (sisa ${m.tersedia})</option>`).join('');s.value=v}
+window.pjAddRow=()=>{const d=document.createElement('div');d.className='flex gap-2 items-center pj-row';d.innerHTML='<select class="pj-sel flex-1 px-3 py-2.5 border rounded-xl bg-white shadow-sm"></select><input type="number" min="1" value="1" class="pj-qty w-20 px-2 py-2.5 border rounded-xl text-center shadow-sm"><button type="button" onclick="this.parentNode.remove()" class="px-2.5 py-2 text-red-600 font-bold">✕</button>';$('pjItems').appendChild(d);fillSel(d.querySelector('select'))};
+window.pjSend=async e=>{e.preventDefault();const it={};
+ document.querySelectorAll('.pj-row').forEach(r=>{const id=r.querySelector('select').value,q=+r.querySelector('.pj-qty').value;if(id&&q>0)it[id]=(it[id]||0)+q});
+ const items=Object.entries(it).map(([id,jumlah])=>({id,jumlah}));if(!items.length)return toast('Pilih minimal 1 APD.',0);
+ for(const x of items){const m=S.master.find(m=>m.id===x.id);if(x.jumlah>m.tersedia)return toast(`Stok ${nm(m)} tinggal ${m.tersedia}.`,0)}
+ const f=id=>$(id).value.trim(),b=$('pjSendBtn');b.disabled=true;b.textContent='Mengirim…';
+ try{const p={action:'apdCreate',nama:f('pjNama'),reg:f('pjReg'),dept:f('pjDept'),tipe:$('pjTipe').value,alasan:f('pjAlasan'),items};
+  const r=await post(p);if(!r.ok)throw new Error(r.msg);
+  localStorage.setItem('pjWho',JSON.stringify({n:p.nama,r:p.reg,d:p.dept,t:p.tipe}));mine.push(r.kode);localStorage.setItem('pjMine',JSON.stringify(mine.slice(-30)));
+  flash=r.kode;toast('✅ Tercatat: '+r.kode);$('pjItems').innerHTML='';pjAddRow();$('pjAlasan').value='';await apdLoad();setTimeout(()=>flash='',3000)
+ }catch(err){toast(err.message||'Gagal mengirim',0)}finally{b.disabled=false;b.textContent='Pinjam APD'}};
+
+/* ---------- Modal: pengembalian (karyawan) / detail (admin) ---------- */
+document.body.insertAdjacentHTML('beforeend','<div id="pjModal" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm px-3 no-print"><div id="pjModalBody" class="bg-white rounded-2xl shadow-2xl w-full max-w-md max-h-[92vh] overflow-y-auto p-5 space-y-3 text-xs"></div></div>');
+const closeM=()=>$('pjModal').classList.add('hidden');window.pjClose=closeM;
+const info=l=>`<div class="bg-slate-50 border rounded-xl p-3 space-y-1"><p><b>${esc(l.kode)}</b> · ${esc(l.tipe)}</p><p>${esc(l.nama)} (${esc(l.reg)}) — ${esc(l.dept)}</p><p>${itemsTxt(l)}</p><p class="text-slate-500">Alasan: ${esc(l.alasan)}</p><p>Dipinjam: <b>${fmt(l.waktu)}</b>${l.kembali?` · Kembali: <b>${fmt(l.kembali)}</b>`:''}</p></div>`;
+window.pjOpen=kode=>{const l=S.loans.find(x=>x.kode===kode);if(!l)return;const B=$('pjModalBody');
+ if(isAdm()){B.innerHTML=`<h3 class="text-sm font-bold border-b pb-2">Detail Peminjaman</h3>${info(l)}<div id="pjEv" class="text-center text-slate-400"></div><div class="flex gap-2">${l.status==='DIPINJAM'?`<button onclick="pjCancel('${l.kode}')" class="flex-1 bg-red-600 text-white font-bold py-2.5 rounded-xl">Batalkan Peminjaman</button>`:''}<button onclick="pjClose()" class="flex-1 bg-slate-200 font-bold py-2.5 rounded-xl">Tutup</button></div>`;
+  if(l.status==='DIKEMBALIKAN'){$('pjEv').textContent='Memuat bukti…';post({action:'apdAdminEvidence',adminPass:appCredentials.admin.pass,kode}).then(r=>{$('pjEv').innerHTML=r.ok?`<p class="font-semibold text-slate-600 mb-1">Paraf</p><img src="${r.paraf}" class="mx-auto border rounded-lg max-h-28"><p class="font-semibold text-slate-600 my-1">Foto Bukti</p><img src="${r.foto}" class="mx-auto border rounded-lg max-h-56">`:esc(r.msg)})}
+ }else{B.innerHTML=`<h3 class="text-sm font-bold border-b pb-2">Pengembalian APD</h3>${info(l)}<div><label class="block font-semibold text-slate-600 mb-1">Paraf Peminjam *</label><canvas id="pjSig" width="400" height="160" class="w-full border-2 border-dashed rounded-xl bg-slate-50" style="touch-action:none"></canvas><button type="button" onclick="pjSigClear()" class="text-red-600 font-bold mt-1">Hapus paraf</button></div><div><label class="block font-semibold text-slate-600 mb-1">Foto Bukti Pengembalian *</label><input type="file" id="pjPhoto" accept="image/*" capture="environment" onchange="pjPrev(this)" class="w-full text-xs file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:bg-red-50 file:text-red-700"><img id="pjPrevImg" class="hidden mt-2 max-h-40 rounded-lg border mx-auto"></div><p class="text-[11px] text-slate-500">⏱ Waktu pengembalian terisi otomatis saat dikonfirmasi.</p><div class="flex gap-2"><button id="pjRetBtn" onclick="pjDoReturn('${l.kode}')" class="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-2.5 rounded-xl">✅ Konfirmasi Pengembalian</button><button onclick="pjClose()" class="bg-slate-200 font-bold py-2.5 px-4 rounded-xl">Batal</button></div>`;
+  const c=$('pjSig'),x=c.getContext('2d');x.lineWidth=3;x.lineCap='round';x.strokeStyle='#0f172a';let dr=false;c._d=false;
+  const pos=e=>{const r=c.getBoundingClientRect();return[(e.clientX-r.left)*c.width/r.width,(e.clientY-r.top)*c.height/r.height]};
+  c.onpointerdown=e=>{dr=true;c.setPointerCapture(e.pointerId);x.beginPath();x.moveTo(...pos(e))};
+  c.onpointermove=e=>{if(!dr)return;x.lineTo(...pos(e));x.stroke();c._d=true};c.onpointerup=()=>dr=false}
+ $('pjModal').classList.remove('hidden')};
+window.pjSigClear=()=>{const c=$('pjSig');c.getContext('2d').clearRect(0,0,c.width,c.height);c._d=false};
+window.pjPrev=i=>{const im=$('pjPrevImg');if(i.files[0]){im.src=URL.createObjectURL(i.files[0]);im.classList.remove('hidden')}};
+window.pjDoReturn=async kode=>{const c=$('pjSig'),f=$('pjPhoto').files[0];if(!c._d)return toast('Paraf wajib diisi.',0);if(!f)return toast('Foto bukti wajib diambil.',0);
+ const b=$('pjRetBtn');b.disabled=true;b.textContent='Mengirim…';
+ try{const r=await post({action:'apdReturn',kode,paraf:c.toDataURL('image/png'),foto:await shrink(f)});if(!r.ok)throw new Error(r.msg);closeM();toast('✅ APD berhasil dikembalikan. Terima kasih!');apdLoad()}
+ catch(e){toast(e.message||'Gagal',0);b.disabled=false;b.textContent='✅ Konfirmasi Pengembalian'}};
+
+/* ---------- Aksi admin ---------- */
+const adm=async(p,ok)=>{try{const r=await post({...p,adminPass:appCredentials.admin.pass});if(!r.ok)throw new Error(r.msg);toast(ok);dirty=false;closeM();apdLoad()}catch(e){toast(e.message||'Gagal',0)}};
+window.pjSaveStok=()=>adm({action:'apdAdminSave',updates:[...document.querySelectorAll('[data-mid]')].map(r=>({id:r.dataset.mid,total:+r.querySelector('.mt').value,aktif:r.querySelector('.ma').checked}))},'Perubahan stok disimpan');
+window.pjAddType=()=>adm({action:'apdAdminAdd',kategori:$('nkKat').value,varian:$('nkVar').value,ikon:$('nkIkon').value,total:+$('nkStok').value},'Jenis APD ditambahkan');
+window.pjCancel=k=>confirm('Batalkan peminjaman '+k+'? Stok akan dikembalikan.')&&adm({action:'apdAdminCancel',kode:k},'Peminjaman dibatalkan');
+
+/* ---------- Carousel dashboard sebelum login ---------- */
+let ci=0,idle=0;const slides=[...document.querySelectorAll('.pub-slide')];
+const fit=()=>{$('pubViewport').style.height=slides[ci].offsetHeight+'px'};
+window.pubGo=i=>{ci=(i+slides.length)%slides.length;$('pubTrack').style.transform=`translateX(-${ci*100}%)`;document.querySelectorAll('.pub-dot').forEach((d,k)=>d.classList.toggle('on',k===ci));fit()};
+slides.forEach(s=>new ResizeObserver(fit).observe(s));addEventListener('resize',fit);
+['mousemove','mousedown','touchstart','keydown','wheel','scroll'].forEach(ev=>addEventListener(ev,()=>idle=0,{passive:true}));
+setInterval(()=>{if($('loginPage').classList.contains('hidden')||document.hidden)return;
+ const busy=document.querySelector('.fixed.inset-0:not(.hidden)')||/INPUT|TEXTAREA|SELECT/.test(document.activeElement.tagName);
+ if(busy){idle=0;return}if(++idle>=5){idle=0;pubGo(ci+1)}},1000);
+
+setInterval(()=>{if(document.hidden)return;const pub=!$('loginPage').classList.contains('hidden'),mod=currentUser&&!$('modulApd').classList.contains('hidden');if(pub||mod)apdLoad()},5000);
+$('pubPrev').onclick=()=>pubGo(ci-1);$('pubNext').onclick=()=>pubGo(ci+1);pubGo(0);apdLoad();
+})();
+</script>
 </body>
 </html>
