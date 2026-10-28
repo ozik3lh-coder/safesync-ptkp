@@ -3468,5 +3468,27 @@ function setFloor(v,tip){floorFilter=v;document.querySelectorAll('.map-marker[da
  w.appendChild(bar)});
 setFloor('all');
 </script>
+<style>.fl-pulse{outline:3px solid #dc2626;outline-offset:2px;animation:flp 1.2s infinite}@keyframes flp{0%{box-shadow:0 0 0 0 rgba(220,38,38,.65)}100%{box-shadow:0 0 0 16px rgba(220,38,38,0)}}
+.fl-chip{position:absolute;left:20px;top:-6px;white-space:nowrap;background:#fff;color:#0f172a;font-size:10px;font-weight:700;padding:3px 8px;border-radius:8px;box-shadow:0 2px 8px rgba(0,0,0,.3);pointer-events:none;line-height:1.2;z-index:50}
+.fl-sel{padding:6px 10px;border-radius:9999px;font-size:11px;font-weight:600;max-width:210px;background:rgba(255,255,255,.88);border:1px solid rgba(255,255,255,.7);box-shadow:0 2px 10px rgba(15,23,42,.25);color:#334155;cursor:pointer}</style>
+<script>
+const FOC={},FSC={},FLAYERS=['publicMarkersLayer','statusMarkersLayer','adminMarkersLayer'];
+const _fm=window.focusMapItem,_sf=window.setFloor;
+window.focusMapItem=function(id){FOC.adminMarkersLayer=id||'';FSC.adminMarkersLayer=!!id;_fm.apply(this,arguments)};
+window.focusLayer=(lid,id)=>{FOC[lid]=id||'';FSC[lid]=!!id;decorate(lid)};
+window.setFloor=function(){_sf.apply(this,arguments);FLAYERS.forEach(decorate)};
+function decorate(lid){const L=document.getElementById(lid);if(!L)return;const fid=String(FOC[lid]||'');
+ L.querySelectorAll('.map-marker').forEach(m=>{const c=m.querySelector('.fl-chip');if(c)c.remove();m.classList.remove('fl-pulse');m.style.opacity='';m.style.zIndex='';
+  if(!fid){m.style.display=(floorFilter==='all'||m.dataset.floor===floorFilter)?'':'none';return}
+  if(m.textContent.trim()===fid){const it=qrList.find(q=>String(q.id)===fid);m.style.display='';m.classList.add('fl-pulse');m.style.zIndex=40;
+   if(it){const s=document.createElement('span');s.className='fl-chip';s.textContent=it.code+' · '+it.location+' · Lantai '+(it.floor||1);if(parseFloat(m.style.left)>70)s.style.cssText='left:auto;right:20px';m.appendChild(s)}
+   if(FSC[lid]){FSC[lid]=false;if(lid!=='publicMarkersLayer')m.scrollIntoView({block:'center',inline:'center',behavior:'smooth'})}}
+  else if(lid==='adminMarkersLayer'&&isAdminMapEditMode)m.style.opacity='.25';else m.style.display='none'})}
+FLAYERS.forEach(lid=>{const l=document.getElementById(lid);if(!l)return;
+ if(lid!=='adminMarkersLayer'){const bar=l.parentElement.querySelector('.fl-bar');if(bar){const s=document.createElement('select');s.className='fl-sel';s.title='Pilih APAR tanpa mengetik';s.onchange=()=>focusLayer(lid,s.value);bar.insertBefore(s,bar.querySelector('.fl-tip'));
+  window['fill_'+lid]=()=>{const v=s.value;s.innerHTML='<option value="">🔎 Pilih cepat APAR</option>'+qrList.map(q=>'<option value="'+q.id+'">'+q.code+' · '+q.location+'</option>').join('');s.value=v};
+  l._sel=s}}
+ new MutationObserver(()=>{if(l._sel&&document.activeElement!==l._sel)window['fill_'+lid]();decorate(lid)}).observe(l,{childList:true})});
+</script>
 </body>
 </html>
