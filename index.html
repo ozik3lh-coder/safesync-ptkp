@@ -3465,7 +3465,7 @@ window.floorFilter='all';
 const FL_IC={all:'<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2 2 7l10 5 10-5-10-5z"/><path d="m2 12 10 5 10-5"/><path d="m2 17 10 5 10-5"/></svg>','1':'<span class="fl-i" style="border-radius:50%">1</span>','2':'<span class="fl-i" style="border-radius:4px">2</span>'};
 const FL_MSG={all:'Menampilkan semua APAR (Lantai 1 & 2)','1':'Lantai 1 — titik APAR berbentuk bulat','2':'Lantai 2 — titik APAR berbentuk kotak, bergaris biru & berlabel 2'};
 let flTimer;
-function applyFloor(m,item){const f=Number(item.floor)||1;m.dataset.floor=f;if(f===2)m.classList.add('fl2');if(floorFilter!=='all'&&String(f)!==floorFilter)m.style.display='none'}
+function applyFloor(m,item){const f=Number(item.floor)||1;m.dataset.floor=f;m.title=(item.code||'')+' · '+(item.location||'');if(f===2)m.classList.add('fl2');if(floorFilter!=='all'&&String(f)!==floorFilter)m.style.display='none'}
 function setFloor(v,tip){floorFilter=v;document.querySelectorAll('.map-marker[data-floor]').forEach(m=>m.style.display=(v==='all'||m.dataset.floor===v)?'':'none');
  document.querySelectorAll('.fl-btn').forEach(b=>b.classList.toggle('on',b.dataset.v===v));
  document.querySelectorAll('.fl-tip').forEach(t=>{t.textContent=FL_MSG[v];t.classList.toggle('show',!!tip)});
@@ -3746,6 +3746,33 @@ html.mob input,html.mob select,html.mob textarea{font-size:16px!important}
  document.documentElement.classList.toggle('mob',isMob());
  const c=$('navButtonsContainer');if(c){new MutationObserver(()=>setTimeout(layout,0)).observe(c,{childList:true});layout()}
  addEventListener('resize',layout);addEventListener('orientationchange',()=>setTimeout(layout,200))})();
+</script>
+<style>
+.map-marker{width:var(--md,9px)!important;height:var(--md,9px)!important;min-width:0!important;min-height:0!important;padding:0!important;font-size:var(--mf,0px)!important;line-height:1!important;border-width:1px!important}
+.fl-chip{left:calc(var(--md,9px) + 6px)}
+.fl2::after{font-size:6px;top:-6px;right:-6px;padding:1px 2px}
+.fl-bar.fl-out{position:static;flex-direction:row;flex-wrap:wrap;align-items:center;margin:0 0 8px}
+.fl-bar.fl-out .fl-tip{width:100%}
+html.mob select.fl-sel{font-size:12px!important;max-width:170px;padding:6px 8px}
+.grid>*{min-width:0}
+.table-container{min-width:0}
+</style>
+<script>
+(function(){const L=['publicMarkersLayer','statusMarkersLayer','adminMarkersLayer'],ZM={},isMob=()=>Math.min(innerWidth,screen.width)<=768,G=id=>document.getElementById(id);
+ function setZoom(lid,z){const l=G(lid);if(!l)return;const cv=l.parentElement,w=cv.parentElement;z=Math.max(1,Math.min(6,z));ZM[lid]=z;
+  cv.style.width=z>1?(z*100)+'%':'';cv.style.maxWidth=z>1?'none':'';w.style.justifyContent=z>1?'flex-start':'';w.style.alignItems=z>1?'flex-start':'';
+  const D=Math.min(18,(isMob()?5:9)+2.5*(z-1));cv.style.setProperty('--md',D+'px');cv.style.setProperty('--mf',D>=11?(D*.6)+'px':'0px')}
+ window.mapZoom=(lid,d)=>setZoom(lid,d===0?1:(ZM[lid]||1)+d);
+ L.forEach(lid=>{const l=G(lid);if(!l)return;const bar=l.parentElement.querySelector('.fl-bar');if(!bar)return;l._home=l.parentElement;
+  const z=document.createElement('div');z.className='fl-pill';z.title='Zoom peta';
+  z.innerHTML=[['＋',0.75],['－',-0.75],['⟲',0]].map(x=>`<button type="button" class="fl-btn" aria-label="Zoom" onclick="mapZoom('${lid}',${x[1]})">${x[0]}</button>`).join('');
+  bar.insertBefore(z,bar.children[1]||null);setZoom(lid,1)});
+ function place(){L.forEach(lid=>{const l=G(lid);if(!l||!l._home)return;const bar=l._home.querySelector('.fl-bar')||document.querySelector('.fl-bar[data-lid="'+lid+'"]');if(!bar)return;bar.dataset.lid=lid;
+  const w=l._home.parentElement;
+  if(isMob()){if(!bar.classList.contains('fl-out')){w.parentElement.insertBefore(bar,w);bar.classList.add('fl-out')}}
+  else if(bar.classList.contains('fl-out')){l._home.appendChild(bar);bar.classList.remove('fl-out')}
+  setZoom(lid,ZM[lid]||1)})}
+ place();addEventListener('resize',place);addEventListener('orientationchange',()=>setTimeout(place,200))})();
 </script>
 </body>
 </html>
