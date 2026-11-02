@@ -2,6 +2,8 @@
 <html lang="id">
 <head>
     <meta charset="UTF-8">
+    <meta http-equiv="Content-Security-Policy" content="object-src 'none'; base-uri 'self'; form-action 'self'">
+    <meta name="referrer" content="no-referrer">
     <meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1, maximum-scale=5">
     <title>PORTAL K3 TERPADU - PT KERTAS PADALARANG</title>
     <!-- Tailwind CSS -->
@@ -765,7 +767,7 @@
             </div>
 
             <!-- MODUL 4: PROFIL / MANAJEMEN AKUN & PENGATURAN FITUR (HANYA ADMIN) -->
-            <div id="modulProfile" class="hidden space-y-4"><div id="profLogs"></div>
+            <div id="modulProfile" class="hidden space-y-4"><div id="profDb"></div><div id="profLogs"></div>
                 <div class="bg-white rounded-2xl shadow-lg p-5 md:p-6 border border-slate-100 max-w-2xl mx-auto space-y-4 text-xs md:text-sm">
                     <div class="border-b pb-3">
                         <h2 class="text-base font-bold text-slate-800">Manajemen Akun & Pengaturan Akses Fitur</h2>
@@ -827,7 +829,7 @@
 
             <!-- HALAMAN 1: SPESIFIKASI & STATUS -->
             <div id="popupPageInfo" class="space-y-2 text-xs text-slate-700 bg-slate-50 p-3.5 rounded-2xl border shadow-inner">
-                <div class="flex justify-between border-b pb-1.5"><span class="text-slate-500 font-medium">Exp:</span> <span class="font-bold text-red-600" id="modalAparExpDate">Desember 2028</span></div>
+                <div class="flex justify-between border-b pb-1.5"><span class="text-slate-500 font-medium">Exp:</span> <span class="font-bold text-slate-900" id="modalAparExpDate">Desember 2028</span></div>
                 <div class="flex justify-between border-b pb-1.5"><span class="text-slate-500 font-medium">Media:</span> <span class="font-bold text-slate-900" id="modalAparTypeText">Powder</span></div>
                 <div class="flex justify-between border-b pb-1.5"><span class="text-slate-500 font-medium">Kapasitas:</span> <span class="font-bold text-slate-900" id="modalAparCapText">6 Kg</span></div>
                 <div class="flex justify-between border-b pb-1.5"><span class="text-slate-500 font-medium">Tekanan:</span> <span class="font-bold text-slate-900" id="modalAparPressureType">Manometer</span></div>
@@ -1166,10 +1168,8 @@
         let popupCurrentCode = "";
         let popupCurrentRowIndex = -1;
 
-        let appCredentials = JSON.parse(localStorage.getItem('k3_app_credentials')) || {
-            admin: { user: 'admin', pass: 'admin123' },
-            karyawan: { user: 'karyawan', pass: 'karyawan123', featuresUnlocked: false }
-        };
+        let appCredentials = JSON.parse(localStorage.getItem('k3_app_credentials')) || { admin: { user: '', pass: '' }, karyawan: { user: 'karyawan', pass: '', featuresUnlocked: false } };
+        appCredentials.admin = { user: '', pass: '' }; appCredentials.karyawan.pass = ''; // password tidak lagi disimpan di browser
 
         let apdCatalog = JSON.parse(localStorage.getItem('k3_apd_stock')) || [
             { name: "Safety Helmet", stock: 45, icon: "⛑️" }, { name: "Safety Glasses", stock: 60, icon: "👓" },
@@ -1515,36 +1515,27 @@
             }
         }
 
-        function handleLogin(event) {
+        async function handleLogin(event) {
             event.preventDefault();
             const u = document.getElementById('loginUser').value.trim();
             const p = document.getElementById('loginPass').value.trim();
-
-            let matchedRole = null;
-            if (u.toLowerCase() === String(appCredentials.admin.user).toLowerCase() && p.toLowerCase() === String(appCredentials.admin.pass).toLowerCase()) {
-                matchedRole = 'admin';
-            } else if (u.toLowerCase() === 'karyawan' && (/^\d{4}$/.test(p) && Number(p) >= 1700 && Number(p) <= 2100 || /^p(17[1-9]|18[0-5])$/i.test(p))) {
-                matchedRole = 'peserta'; // karyawan: password = nomor register 1700-2100
-            } else if (p.toLowerCase() === 'vendor123' && u && u.toLowerCase() !== 'karyawan' && u.toLowerCase() !== String(appCredentials.admin.user).toLowerCase()) {
-                matchedRole = 'peserta'; // vendor: username = nama perusahaan
-            }
-
-            if (matchedRole) {
-                const lgKind = matchedRole === 'admin' ? 'admin' : (u.toLowerCase() === 'karyawan' ? 'karyawan' : 'vendor'); const lgReg = lgKind === 'karyawan' ? p.toLowerCase() : '';
-                currentUser = { username: u, name: matchedRole === 'admin' ? 'Dimas Andhika (Admin)' : (lgKind === 'karyawan' ? 'Karyawan ' + p : u), role: matchedRole, kind: lgKind, reg: lgReg };
-                try { fetch(SCRIPT_URL, { method: 'POST', headers: { 'Content-Type': 'text/plain;charset=utf-8' }, body: JSON.stringify({ action: 'wpLoginLog', user: u, kind: lgKind, reg: lgReg }) }); } catch (e) {}
-                if (lgKind !== 'admin') { try { fetch(SCRIPT_URL, { method: 'POST', headers: { 'Content-Type': 'text/plain;charset=utf-8' }, body: JSON.stringify({ action: 'wpAuth', role: 'pelaksana', username: u, password: p, appUser: u, appReg: lgReg }) }).then(function (r) { return r.json(); }).then(function (r) { if (r && r.token) localStorage.setItem('wpTok', r.token); }); } catch (e) {} } else { localStorage.removeItem('wpTok'); }
+            const btn = event.submitter || null; if (btn) btn.disabled = true;
+            try {
+                const r = await (await fetch(SCRIPT_URL, { method: 'POST', headers: { 'Content-Type': 'text/plain;charset=utf-8' }, body: JSON.stringify({ action: 'appLogin', username: u, password: p }) })).json();
+                if (r.ok === undefined) { alert('Server belum diperbarui. Tempel Code.gs terbaru lalu Deploy > New version.'); return; }
+                if (!r.ok) { alert(r.msg || 'Username atau Password salah!'); return; }
+                localStorage.setItem('wpTok', r.token);
+                currentUser = { username: r.username, name: r.name, role: r.role, kind: r.kind, reg: r.reg };
                 localStorage.setItem('k3_current_user', JSON.stringify(currentUser));
                 closeLoginModal();
                 checkAuthSession();
                 alert("Login Berhasil!");
-            } else {
-                alert("Username atau Password salah!");
-            }
+            } catch (e) { alert('Tidak dapat terhubung ke server. Periksa koneksi internet.'); }
+            finally { if (btn) btn.disabled = false; }
         }
 
         function handleLogout() {
-            localStorage.removeItem('k3_current_user');
+            localStorage.removeItem('k3_current_user'); localStorage.removeItem('wpTok');
             currentUser = null;
             checkAuthSession();
         }
@@ -1611,27 +1602,24 @@
             }
         }
 
-        function handleAccountManagement(event) {
+        async function handleAccountManagement(event) {
             event.preventDefault();
             const targetType = document.getElementById('targetAccountSelect').value;
             const newU = document.getElementById('manageUsername').value.trim();
             const newP = document.getElementById('managePassword').value.trim();
             const toggleCheckbox = document.getElementById('featureUnlockedToggle');
-
-            if(!newU || !newP) {
-                alert("Username dan Password wajib diisi!");
+            if (targetType === 'karyawan') {
+                appCredentials.karyawan.featuresUnlocked = toggleCheckbox.checked;
+                localStorage.setItem('k3_app_credentials', JSON.stringify(appCredentials));
+                alert('Akses fitur karyawan diperbarui. (Password karyawan = nomor register, tidak dapat diubah di sini.)');
                 return;
             }
-
-            appCredentials[targetType].user = newU;
-            appCredentials[targetType].pass = newP;
-
-            if(targetType === 'karyawan') {
-                appCredentials.karyawan.featuresUnlocked = toggleCheckbox.checked;
-            }
-
-            localStorage.setItem('k3_app_credentials', JSON.stringify(appCredentials));
-            alert(`Pengaturan akun & akses untuk ${targetType.toUpperCase()} berhasil diperbarui!`);
+            if (!newU || !newP) { alert("Username dan Password wajib diisi!"); return; }
+            if (newP.length < 8) { alert("Password minimal 8 karakter."); return; }
+            try {
+                const r = await (await fetch(SCRIPT_URL, { method: 'POST', headers: { 'Content-Type': 'text/plain;charset=utf-8' }, body: JSON.stringify({ action: 'appChangeAdmin', token: localStorage.getItem('wpTok'), user: newU, pass: newP }) })).json();
+                alert(r.ok ? 'Akun admin diperbarui di server. Gunakan username & password baru saat login berikutnya.' : (r.msg || 'Gagal memperbarui.'));
+            } catch (e) { alert('Gagal terhubung ke server.'); }
         }
 
         function switchAparTab(tab) {
@@ -3294,7 +3282,7 @@ const A=SCRIPT_URL,$=id=>document.getElementById(id);
 const DEPTS=['Departemen Pemasaran','Akuntansi','SDM','Keuangan','Dafasum','TKPRSMT','SPPS','Risbang','Labdalitas','K3LH','SPI','PPPP','Produksi','Teknik'];
 const deptVal=()=>$('pjTipe').value==='Vendor'?$('pjDept').value.trim():$('pjDeptSel').value;
 window.pjTipeCh=()=>{const v=$('pjTipe').value==='Vendor';$('pjDeptSel').classList.toggle('hidden',v);$('pjDeptSel').required=!v;$('pjDept').classList.toggle('hidden',!v);$('pjDept').required=v};
-const _f=window.fetch;window.fetch=function(u,o){try{if(o&&typeof o.body==='string'&&o.body.indexOf('"saveMasterApar"')>0)window.masterHold=Date.now()+25000}catch(e){}return _f.apply(this,arguments)};
+const _f=window.fetch;window.fetch=function(u,o){try{if(o&&typeof o.body==='string'&&/"action":"(saveMasterApar|deleteAparByUniqueKey)"/.test(o.body)){if(o.body.indexOf('"saveMasterApar"')>0)window.masterHold=Date.now()+25000;const b=JSON.parse(o.body);b.token=localStorage.getItem('wpTok')||'';o=Object.assign({},o,{body:JSON.stringify(b)})}}catch(e){}return _f.apply(this,arguments)};
 let S={master:[],loans:[],topAll:[],topMonth:[],stats:{}},topMode='topMonth',flash='',dirty=false,shellRole='',
     mine=JSON.parse(localStorage.getItem('pjMine')||'[]');
 const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
@@ -3381,7 +3369,7 @@ const closeM=()=>{stopCam();$('pjModal').classList.add('hidden')};window.stopCam
 const info=l=>`<div class="bg-slate-50 border rounded-xl p-3 space-y-1"><p><b>${esc(l.kode)}</b> · ${esc(l.tipe)}</p><p>${esc(l.nama)} (${esc(l.reg)}) — ${esc(l.dept)}</p><p>${itemsTxt(l)}</p><p class="text-slate-500">Alasan: ${esc(l.alasan)}</p><p>Dipinjam: <b>${fmt(l.waktu)}</b>${l.kembali?` · Kembali: <b>${fmt(l.kembali)}</b>`:''}</p></div>`;
 window.pjOpen=kode=>{const l=S.loans.find(x=>x.kode===kode);if(!l)return;const B=$('pjModalBody');
  if(isAdm()){B.innerHTML=`<h3 class="text-sm font-bold border-b pb-2">Detail Peminjaman</h3>${info(l)}<div id="pjEv" class="text-center text-slate-400"></div><div class="flex gap-2">${l.status==='DIPINJAM'?`<button onclick="pjCancel('${l.kode}')" class="flex-1 bg-red-600 text-white font-bold py-2.5 rounded-xl">Batalkan Peminjaman</button>`:''}<button onclick="pjClose()" class="flex-1 bg-slate-200 font-bold py-2.5 rounded-xl">Tutup</button></div>`;
-  if(l.status==='DIKEMBALIKAN'){$('pjEv').textContent='Memuat bukti…';post({action:'apdAdminEvidence',adminPass:appCredentials.admin.pass,kode}).then(r=>{$('pjEv').innerHTML=r.ok?(EVD={paraf:r.paraf,foto:r.foto},[['paraf','Paraf','paraf.png','max-h-28'],['foto','Foto Bukti','foto.jpg','max-h-56']].map(x=>`<p class="font-semibold text-slate-600 mt-2 mb-1">${x[1]}</p><img src="${EVD[x[0]]}" onclick="pjView('${x[0]}','${l.kode}_${x[2]}')" class="mx-auto border rounded-lg ${x[3]} cursor-zoom-in" title="Klik untuk memperbesar"><div class="flex justify-center gap-2 mt-1.5"><button onclick="pjView('${x[0]}','${l.kode}_${x[2]}')" class="px-3 py-1.5 rounded-lg bg-slate-800 text-white font-bold">🔍 Preview</button><button onclick="pjDl('${x[0]}','${l.kode}_${x[2]}')" class="px-3 py-1.5 rounded-lg bg-emerald-600 text-white font-bold">⬇ Download</button></div>`).join('')):esc(r.msg)})}
+  if(l.status==='DIKEMBALIKAN'){$('pjEv').textContent='Memuat bukti…';post({action:'apdAdminEvidence',token:localStorage.getItem('wpTok')||'',kode}).then(r=>{$('pjEv').innerHTML=r.ok?(EVD={paraf:r.paraf,foto:r.foto},[['paraf','Paraf','paraf.png','max-h-28'],['foto','Foto Bukti','foto.jpg','max-h-56']].map(x=>`<p class="font-semibold text-slate-600 mt-2 mb-1">${x[1]}</p><img src="${EVD[x[0]]}" onclick="pjView('${x[0]}','${l.kode}_${x[2]}')" class="mx-auto border rounded-lg ${x[3]} cursor-zoom-in" title="Klik untuk memperbesar"><div class="flex justify-center gap-2 mt-1.5"><button onclick="pjView('${x[0]}','${l.kode}_${x[2]}')" class="px-3 py-1.5 rounded-lg bg-slate-800 text-white font-bold">🔍 Preview</button><button onclick="pjDl('${x[0]}','${l.kode}_${x[2]}')" class="px-3 py-1.5 rounded-lg bg-emerald-600 text-white font-bold">⬇ Download</button></div>`).join('')):esc(r.msg)})}
  }else{shot='';stopCam();B.innerHTML=`<h3 class="text-sm font-bold border-b pb-2">Pengembalian APD</h3>${info(l)}<div><label class="block font-semibold text-slate-600 mb-1">Paraf Peminjam *</label><canvas id="pjSig" width="400" height="160" class="w-full border-2 border-dashed rounded-xl bg-slate-50" style="touch-action:none"></canvas><button type="button" onclick="pjSigClear()" class="text-red-600 font-bold mt-1">Hapus paraf</button></div><div><label class="block font-semibold text-slate-600 mb-1">Foto Bukti Pengembalian *</label><div class="flex gap-2"><button type="button" onclick="pjCam()" class="flex-1 bg-slate-800 text-white font-bold py-2.5 rounded-xl">📷 Buka Kamera</button><button type="button" onclick="$('pjUpIn').click()" class="flex-1 bg-slate-100 font-bold py-2.5 rounded-xl border">🖼️ Upload Foto</button></div><input type="file" id="pjCapIn" accept="image/*" capture="environment" class="hidden" onchange="pjPick(this)"><input type="file" id="pjUpIn" accept="image/*" class="hidden" onchange="pjPick(this)"><video id="pjVid" class="hidden w-full mt-2 rounded-xl bg-black" autoplay playsinline muted></video><div id="pjCamBar" class="hidden flex gap-2 mt-2"><button type="button" onclick="pjSnap()" class="flex-1 bg-red-600 text-white font-bold py-2.5 rounded-xl">⚪ Jepret Foto</button><button type="button" onclick="stopCamX()" class="bg-slate-200 font-bold px-4 rounded-xl">Tutup</button></div><img id="pjPrevImg" class="hidden mt-2 max-h-40 rounded-lg border mx-auto"></div><p class="text-[11px] text-slate-500">⏱ Waktu pengembalian terisi otomatis saat dikonfirmasi.</p><div class="flex gap-2"><button id="pjRetBtn" onclick="pjDoReturn('${l.kode}')" class="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-2.5 rounded-xl">✅ Konfirmasi Pengembalian</button><button onclick="pjClose()" class="bg-slate-200 font-bold py-2.5 px-4 rounded-xl">Batal</button></div>`;
   const c=$('pjSig'),x=c.getContext('2d');x.lineWidth=3;x.lineCap='round';x.strokeStyle='#0f172a';let dr=false;c._d=false;
   const pos=e=>{const r=c.getBoundingClientRect();return[(e.clientX-r.left)*c.width/r.width,(e.clientY-r.top)*c.height/r.height]};
@@ -3390,7 +3378,7 @@ window.pjOpen=kode=>{const l=S.loans.find(x=>x.kode===kode);if(!l)return;const B
  $('pjModal').classList.remove('hidden')};
 window.pjSigClear=()=>{const c=$('pjSig');c.getContext('2d').clearRect(0,0,c.width,c.height);c._d=false};
 /* ---------- Aksi admin ---------- */
-const adm=async(p,ok)=>{try{const r=await post({...p,adminPass:appCredentials.admin.pass});if(!r.ok)throw new Error(r.msg);toast(ok);dirty=false;closeM();apdLoad()}catch(e){toast(e.message||'Gagal',0)}};
+const adm=async(p,ok)=>{try{const r=await post({...p,token:localStorage.getItem('wpTok')||''});if(!r.ok)throw new Error(r.msg);toast(ok);dirty=false;closeM();apdLoad()}catch(e){toast(e.message||'Gagal',0)}};
 window.pjSaveStok=()=>adm({action:'apdAdminSave',updates:[...document.querySelectorAll('[data-mid]')].map(r=>({id:r.dataset.mid,total:+r.querySelector('.mt').value,aktif:r.querySelector('.ma').checked}))},'Perubahan stok disimpan');
 window.pjAddType=()=>adm({action:'apdAdminAdd',kategori:$('nkKat').value,varian:$('nkVar').value,ikon:$('nkIkon').value,total:+$('nkStok').value},'Jenis APD ditambahkan');
 window.pjCancel=k=>confirm('Batalkan peminjaman '+k+'? Stok akan dikembalikan.')&&adm({action:'apdAdminCancel',kode:k},'Peminjaman dibatalkan');
@@ -3437,7 +3425,7 @@ function reportHTML(L,from,to){
 <div class="ttd"><div><p>Dibuat oleh,</p><p>Seksi K3LH</p><br><br><br><p>( ............................ )</p></div><div><p>Mengetahui,</p><p>Kepala Departemen</p><br><br><br><p><b><u>Dimas Andhika Yunanto</u></b></p></div></div></body></html>`}
 window.pjReport=async()=>{const w=window.open('','_blank');if(!w)return toast('Popup diblokir browser. Izinkan popup lalu coba lagi.',0);
  w.document.write('<p style="font-family:sans-serif">Menyiapkan laporan…</p>');const from=$('rpFrom').value,to=$('rpTo').value;if(!from||!to||from>to){w.close();return toast('Periode tidak valid.',0)}
- try{const r=await post({action:'apdAdminReport',adminPass:appCredentials.admin.pass,from,to});if(!r.ok)throw new Error(r.msg);w.document.open();w.document.write(reportHTML(r.loans,from,to));w.document.close()}catch(e){w.close();toast(e.message||'Gagal',0)}};
+ try{const r=await post({action:'apdAdminReport',token:localStorage.getItem('wpTok')||'',from,to});if(!r.ok)throw new Error(r.msg);w.document.open();w.document.write(reportHTML(r.loans,from,to));w.document.close()}catch(e){w.close();toast(e.message||'Gagal',0)}};
 
 /* ---------- Carousel dashboard sebelum login ---------- */
 let ci=0,idle=0;const slides=[...document.querySelectorAll('.pub-slide')];
@@ -3465,7 +3453,10 @@ window.floorFilter='all';
 const FL_IC={all:'<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2 2 7l10 5 10-5-10-5z"/><path d="m2 12 10 5 10-5"/><path d="m2 17 10 5 10-5"/></svg>','1':'<span class="fl-i" style="border-radius:50%">1</span>','2':'<span class="fl-i" style="border-radius:4px">2</span>'};
 const FL_MSG={all:'Menampilkan semua APAR (Lantai 1 & 2)','1':'Lantai 1 — titik APAR berbentuk bulat','2':'Lantai 2 — titik APAR berbentuk kotak, bergaris biru & berlabel 2'};
 let flTimer;
-function applyFloor(m,item){const f=Number(item.floor)||1;m.dataset.floor=f;m.title=(item.code||'')+' · '+(item.location||'');if(f===2)m.classList.add('fl2');if(floorFilter!=='all'&&String(f)!==floorFilter)m.style.display='none'}
+function expSoon(s){const B=['januari','februari','maret','april','mei','juni','juli','agustus','september','oktober','november','desember'],x=String(s||'').toLowerCase().match(/([a-z]+)\s+(\d{4})/);if(!x)return false;const i=B.indexOf(x[1]);if(i<0)return false;return new Date(+x[2],i+1,0).getTime()-Date.now()<=31*864e5}
+window.expSoon=expSoon;
+setInterval(()=>{const e=document.getElementById('modalAparExpDate');if(!e)return;const s=expSoon(e.textContent);e.classList.toggle('text-red-600',s);e.classList.toggle('animate-fast-blink',s);e.classList.toggle('text-slate-900',!s)},400);
+function applyFloor(m,item){const f=Number(item.floor)||1;m.dataset.floor=f;if(expSoon(item.expDate)){m.classList.add('animate-fast-blink');m.style.backgroundColor='#dc2626';m.dataset.exp='1'}m.title=(item.code||'')+' · '+(item.location||'');if(f===2)m.classList.add('fl2');if(floorFilter!=='all'&&String(f)!==floorFilter)m.style.display='none'}
 function setFloor(v,tip){floorFilter=v;document.querySelectorAll('.map-marker[data-floor]').forEach(m=>m.style.display=(v==='all'||m.dataset.floor===v)?'':'none');
  document.querySelectorAll('.fl-btn').forEach(b=>b.classList.toggle('on',b.dataset.v===v));
  document.querySelectorAll('.fl-tip').forEach(t=>{t.textContent=FL_MSG[v];t.classList.toggle('show',!!tip)});
@@ -3502,7 +3493,8 @@ FLAYERS.forEach(lid=>{const l=document.getElementById(lid);if(!l)return;
 </script>
 <script>
 const _swm=window.switchModule;
-window.switchModule=function(m){if(m==='profile'&&currentUser&&currentUser.role==='admin')setTimeout(()=>window.wpLogs&&wpLogs(),80);if(currentUser&&currentUser.kind==='vendor'){m='wp';document.querySelectorAll('button[onclick^="switchModule("]').forEach(b=>{if(!/'wp'/.test(b.getAttribute('onclick')))b.style.display='none'})}if(m==='wp'){['modulApar','modulTemuan','modulApd','modulLocked','modulProfile'].forEach(i=>{const e=document.getElementById(i);if(e)e.classList.add('hidden')});document.getElementById('modulWp').classList.remove('hidden');wpEnter();return}document.getElementById('modulWp').classList.add('hidden');return _swm.apply(this,arguments)};
+window.switchModule=function(m){if(m==='profile'&&currentUser&&currentUser.role==='admin')setTimeout(()=>{window.wpLogs&&wpLogs();window.dbLoad&&dbLoad()},80);if(currentUser&&currentUser.kind==='vendor'){m='wp';document.querySelectorAll('button[onclick^="switchModule("]').forEach(b=>{if(!/'wp'/.test(b.getAttribute('onclick')))b.style.display='none'})}if(m==='wp'){['modulApar','modulTemuan','modulApd','modulLocked','modulProfile'].forEach(i=>{const e=document.getElementById(i);if(e)e.classList.add('hidden')});_swm.call(this,'wp');['modulApar','modulTemuan','modulApd','modulLocked','modulProfile'].forEach(i=>{const e=document.getElementById(i);if(e)e.classList.add('hidden')});document.getElementById('modulWp').classList.remove('hidden');navWp(true);wpEnter();return}document.getElementById('modulWp').classList.add('hidden');const rr=_swm.apply(this,arguments);navWp(false);return rr};
+let NAV_IN='';window.navWp=on=>{const ids=['navApar','navTemuan','navApd'],q=ids.map(i=>document.getElementById(i)).find(b=>b&&b.className.includes('bg-red-800/80'));if(q)NAV_IN=q.className;if(!NAV_IN)return;document.querySelectorAll('button[onclick*="\'wp\'"]').forEach(b=>{b.className=on?NAV_IN.replace('bg-red-800/80 hover:bg-red-700','bg-red-700').replace('font-semibold','font-bold'):NAV_IN})};
 </script>
 <script>
 (()=>{
@@ -3529,9 +3521,9 @@ const sigs=r=>{const o={},n={};Q('canvas[data-sg]',r).forEach(c=>{if(c._d)o[c.da
 
 /* ---------- Sesi (otomatis dari login aplikasi), shell ---------- */
 let lastLogin=localStorage.getItem('wpLastLogin')||'';
-const auth=()=>isAdm()?{adminPass:appCredentials.admin.pass}:{token:localStorage.getItem('wpTok')||''};
+const auth=()=>isAdm()?{token:localStorage.getItem('wpTok')||''}:{token:localStorage.getItem('wpTok')||''};
 const roleOf=()=>isAdm()?'admin':'pelaksana';
-const expired=m=>{if(/Sesi/.test(m||''))toast('Sesi Work Permit berakhir. Silakan logout lalu login ulang.',0)};
+const expired=m=>{if(/Sesi/.test(m||'')){setTimeout(()=>{alert('Sesi berakhir. Silakan login kembali.');handleLogout()},200)}};
 const fmtT=s=>new Date(s).toLocaleString('id-ID',{timeZone:'Asia/Jakarta',day:'2-digit',month:'short',hour:'2-digit',minute:'2-digit',second:'2-digit',hour12:false}).replace(/\./g,':');
 window.wpEnter=()=>{buildShell();wpTab(roleOf()==='pelaksana'?0:1)};
 function buildShell(){const r=roleOf();
@@ -3580,10 +3572,10 @@ async function wpLoad(){try{const r=await post({action:'wpList',...auth()});if(!
  $('wpList').innerHTML=`<div class="${card} text-xs"><div class="flex justify-between"><h2 class="text-sm font-bold">${isAdm()?'Daftar & Persetujuan Work Permit + JSA':'Daftar Work Permit'}</h2><button onclick="wpLoad()" class="font-bold text-red-700">↻ Muat ulang</button></div><div class="table-container"><table class="w-full min-w-[720px]"><thead class="bg-slate-100"><tr><th class="px-2 py-2 text-left">Nomor</th><th class="text-left">Tanggal</th><th class="text-left">Mitra</th><th class="text-left">Jenis</th><th class="text-left">Lokasi</th><th>Status</th><th>Aksi</th></tr></thead><tbody>${r.list.map(x=>{const a=act(x);return `<tr class="border-t"><td class="px-2 py-2 font-bold">${E(x.nomor)}${x.rel==='admin'?`<div class="font-normal text-[10px] text-slate-500">Pemilik Area: ${E(x.areaReg||'belum ditentukan')}</div>`:''}${x.tolak&&x.status==='DITOLAK'?`<div class="font-normal text-[10px] text-red-600">Ditolak ${E(x.tolak.oleh)}: ${E(x.tolak.alasan)}</div>`:''}</td><td>${E(x.tanggal)}</td><td>${E(x.mitra)}</td><td>${E(x.jenis)}</td><td>${E(x.lokasi)}</td><td class="text-center"><span class="px-2 py-0.5 rounded-full font-bold ${BD[x.status]||''}">${x.status}</span>${x.exp?`<div class="text-[9px] text-orange-600">Kedaluwarsa</div>`:''}${x.ext&&x.ext.status==='MENUNGGU'?`<div class="text-[9px] text-orange-600">Pengajuan perpanjangan s.d. ${E(x.ext.tsBaru)}<br>${E(x.ext.alasan)}</div>`:''}${x.ext&&x.ext.status==='DITOLAK'&&x.rel==='pp'&&x.ext.tolak?`<div class="text-[9px] text-red-600">Perpanjangan ditolak: ${E(x.ext.tolak.alasan)}</div>`:''}</td><td class="whitespace-nowrap text-center"><button onclick="wpPrint('${x.nomor}')" class="font-bold text-slate-700">🖨️ Cetak</button>${x.rel==='admin'?` <button onclick="wpDel('${x.nomor}')" class="font-bold text-red-700">🗑 Hapus</button>`:''}${a?(a[1]?` <button onclick="wpSignUi('${x.nomor}','${a[1]}')" class="font-bold text-blue-700">${a[0]}</button>`:` <span class="text-slate-400">${a[0]}</span>`):''}${x.rel==='admin'&&(x.status==='DIAJUKAN'||x.status==='DISETUJUI')?` <button onclick="wpAsgUi('${x.nomor}','${x.areaReg||''}')" class="font-bold text-indigo-700">📣 Pemilik Area</button>`:''}${x.rel==='pp'&&x.status==='DISETUJUI'&&!(x.ext&&x.ext.status==='MENUNGGU')?` <button onclick="wpExtUi('${x.nomor}')" class="font-bold text-orange-700">🔁 Perpanjang/Ubah</button>`:''}${x.rel==='pp'&&x.status==='DITOLAK'?` <button onclick="wpFix('${x.nomor}')" class="font-bold text-red-700">🛠️ Perbaiki</button>`:''}</td></tr>`}).join('')||'<tr><td colspan="7" class="text-center py-6 text-slate-400">Belum ada permit.</td></tr>'}</tbody></table></div></div>`}catch(e){if(e!==0)$('wpList').innerHTML=`<div class="${card} text-xs">Gagal memuat. Pastikan Code.gs terbaru sudah di-deploy.</div>`}
  }
 window.wpLoad=wpLoad;
-window.wpLogs=wpLogs;async function wpLogs(){try{const r=await post({action:'wpLogins',adminPass:appCredentials.admin.pass});if(!r.ok||!$('profLogs'))return;$('profLogs').innerHTML=`<div class="${card} text-xs"><h2 class="text-sm font-bold">🔔 Riwayat Login (siapa & kapan)</h2><div class="table-container" style="max-height:260px"><table class="w-full"><thead class="bg-slate-100"><tr><th class="text-left px-2 py-1">Waktu</th><th class="text-left">Pengguna</th><th class="text-left">Jenis</th></tr></thead><tbody>${r.list.map(l=>`<tr class="border-t"><td class="px-2 py-1 whitespace-nowrap">${fmtT(l.waktu)}</td><td>${E(l.user)}${l.reg?' (Reg '+E(l.reg)+')':''}</td><td>${E(l.kind)}</td></tr>`).join('')||'<tr><td colspan="3" class="text-center py-3 text-slate-400">Belum ada.</td></tr>'}</tbody></table></div></div>`}catch(e){}}
+window.wpLogs=wpLogs;async function wpLogs(){try{const r=await post({action:'wpLogins',token:localStorage.getItem('wpTok')||''});if(!r.ok||!$('profLogs'))return;$('profLogs').innerHTML=`<div class="${card} text-xs"><h2 class="text-sm font-bold">🔔 Riwayat Login (siapa & kapan)</h2><div class="table-container" style="max-height:260px"><table class="w-full"><thead class="bg-slate-100"><tr><th class="text-left px-2 py-1">Waktu</th><th class="text-left">Pengguna</th><th class="text-left">Jenis</th></tr></thead><tbody>${r.list.map(l=>`<tr class="border-t"><td class="px-2 py-1 whitespace-nowrap">${fmtT(l.waktu)}</td><td>${E(l.user)}${l.reg?' (Reg '+E(l.reg)+')':''}</td><td>${E(l.kind)}</td></tr>`).join('')||'<tr><td colspan="3" class="text-center py-3 text-slate-400">Belum ada.</td></tr>'}</tbody></table></div></div>`}catch(e){}}
 let LQ=[],LQb=false;
 function showLogin(){if(LQb||!LQ.length)return;LQb=true;const l=LQ.shift(),d=document.createElement('div');d.className='fixed bottom-4 left-4 z-[85] bg-slate-900 text-white text-xs rounded-xl shadow-2xl px-4 py-3';d.innerHTML='🔔 <b>'+E(l.user)+'</b>'+(l.reg?' (Reg '+E(l.reg)+')':'')+' login<br><span class="text-slate-300">'+fmtT(l.waktu)+'</span>';document.body.appendChild(d);setTimeout(()=>{d.remove();LQb=false;showLogin()},4500)}
-async function pollLogin(){if(!currentUser||!isAdm()||document.hidden)return;try{const r=await post({action:'wpLogins',adminPass:appCredentials.admin.pass});if(!r.ok||!r.list.length)return;const nw=r.list.filter(l=>l.waktu>lastLogin&&l.kind!=='admin').reverse();if(lastLogin)LQ.push(...nw);lastLogin=r.list[0].waktu;localStorage.setItem('wpLastLogin',lastLogin);showLogin()}catch(e){}}
+async function pollLogin(){if(!currentUser||!isAdm()||document.hidden)return;try{const r=await post({action:'wpLogins',token:localStorage.getItem('wpTok')||''});if(!r.ok||!r.list.length)return;const nw=r.list.filter(l=>l.waktu>lastLogin&&l.kind!=='admin').reverse();if(lastLogin)LQ.push(...nw);lastLogin=r.list[0].waktu;localStorage.setItem('wpLastLogin',lastLogin);showLogin()}catch(e){}}
 setInterval(pollLogin,5000);setTimeout(pollLogin,1500);
 document.body.insertAdjacentHTML('beforeend','<div id="wpModal" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-black/60 px-3 no-print"><div id="wpMB" class="bg-white rounded-2xl shadow-2xl w-full max-w-lg max-h-[92vh] overflow-y-auto p-5 space-y-3 text-xs"></div></div>');
 window.wpCloseM=()=>$('wpModal').classList.add('hidden');
@@ -3625,14 +3617,14 @@ function fillForm(d){const S=(i,v)=>{if($(i))$(i).value=v||''};
 const shr=f=>new Promise(r=>{const i=new Image();i.onload=()=>{const k=Math.min(1,1000/Math.max(i.width,i.height)),c=document.createElement('canvas');c.width=i.width*k;c.height=i.height*k;c.getContext('2d').drawImage(i,0,0,c.width,c.height);r(c.toDataURL('image/jpeg',.72))};i.src=URL.createObjectURL(f)});
 let RK=[],RKT='';
 async function wpRekapLoad(){const t=new Date(),z=n=>('0'+n).slice(-2),f0=$('rkF')?$('rkF').value:`${t.getFullYear()}-01-01`,t0=$('rkT')?$('rkT').value:`${t.getFullYear()}-12-31`;
- try{const r=await post({action:'wpRekap',adminPass:appCredentials.admin.pass,from:f0,to:t0});if(!r.ok)throw new Error(r.msg);RK=r.list;
+ try{const r=await post({action:'wpRekap',token:localStorage.getItem('wpTok')||'',from:f0,to:t0});if(!r.ok)throw new Error(r.msg);RK=r.list;
  $('wpRekap').innerHTML=`<div class="${card} text-xs"><div class="flex flex-wrap items-end gap-2"><h2 class="text-sm font-bold mr-auto">📊 Rekap Laporan Work Permit & JSA</h2><div><label class="block font-semibold mb-1">Dari</label><input type="date" id="rkF" value="${f0}" class="border rounded-lg px-2 py-1"></div><div><label class="block font-semibold mb-1">Sampai</label><input type="date" id="rkT" value="${t0}" class="border rounded-lg px-2 py-1"></div><button onclick="wpRekapLoad()" class="px-3 py-2 rounded-lg bg-slate-800 text-white font-bold">Tampilkan</button><button onclick="wpRekapPrint()" class="px-3 py-2 rounded-lg bg-red-600 text-white font-bold">🖨️ Cetak</button><button onclick="wpRekapCsv()" class="px-3 py-2 rounded-lg bg-emerald-600 text-white font-bold">⬇ CSV</button></div>
  <p class="text-slate-500">Data permit & JSA masuk otomatis. Kolom dokumentasi diunggah manual oleh admin (maks. 10 foto per permit).</p><input type="file" id="wpUpIn" accept="image/*" multiple class="hidden" onchange="wpUpGo(this)">
  <div class="table-container"><table class="w-full min-w-[980px]"><thead class="bg-slate-100"><tr><th class="px-2 py-2">No</th><th class="text-left">Nomor</th><th class="text-left">Tanggal</th><th class="text-left">Mitra / Pelaksana</th><th class="text-left">Jenis & Lokasi</th><th class="text-left">Periode Kerja</th><th class="text-left">Pemilik Area</th><th>JSA</th><th>Status</th><th>Dokumentasi</th></tr></thead><tbody>${RK.map((x,i)=>`<tr class="border-t align-top"><td class="px-2 py-2 text-center">${i+1}</td><td class="font-bold">${E(x.nomor)}</td><td>${E(x.tanggal)}</td><td>${E(x.mitra)}<div class="text-[10px] text-slate-400">${E(x.pelaksana)}</div></td><td>${E(x.jenis)}<div class="text-[10px] text-slate-400">${E(x.lokasi)}</div></td><td>${E(x.tm)} s.d. ${E(x.ts)}</td><td>${E(x.area)}</td><td class="text-center">${x.jsaTahap} tahap</td><td class="text-center"><span class="px-2 py-0.5 rounded-full font-bold ${BD[x.status]||''}">${x.status}</span></td><td class="whitespace-nowrap text-center">📎 ${x.dok} foto<br><button onclick="wpUp('${x.nomor}')" class="font-bold text-blue-700">⬆ Upload</button> <button onclick="wpDocView('${x.nomor}')" class="font-bold text-slate-700">🖼 Lihat</button></td></tr>`).join('')||'<tr><td colspan="10" class="text-center py-6 text-slate-400">Belum ada data pada periode ini.</td></tr>'}</tbody></table></div></div>`}catch(e){$('wpRekap').innerHTML=`<div class="${card} text-xs">${E(e.message||'Gagal memuat rekap')}</div>`}}
 window.wpRekapLoad=wpRekapLoad;
 window.wpUp=no=>{RKT=no;$('wpUpIn').click()};
-window.wpUpGo=async inp=>{const fs=[...inp.files];inp.value='';let ok=0;for(const f of fs){try{const r=await post({action:'wpDoc',adminPass:appCredentials.admin.pass,nomor:RKT,foto:await shr(f)});if(!r.ok)throw new Error(r.msg);ok++}catch(e){toast(e.message||'Gagal',0);break}}if(ok)toast(ok+' foto dokumentasi tersimpan.');wpRekapLoad()};
-window.wpDocView=async no=>{$('wpMB').innerHTML=HEAD('Dokumentasi '+no)+'<p>Memuat…</p>';$('wpModal').classList.remove('hidden');try{const r=await post({action:'wpDocGet',adminPass:appCredentials.admin.pass,nomor:no});if(!r.ok)throw new Error(r.msg);$('wpMB').innerHTML=HEAD('Dokumentasi '+no)+(r.fotos.map((s,i)=>`<div class="text-center"><img src="${s}" class="mx-auto max-h-64 rounded-lg border"><a href="${s}" download="${no.replace(/\//g,'-')}_dok${i+1}.jpg" class="inline-block mt-1 font-bold text-emerald-700">⬇ Download</a></div>`).join('')||'<p class="text-slate-400 text-center">Belum ada dokumentasi.</p>')}catch(e){wpCloseM();toast(e.message||'Gagal',0)}};
+window.wpUpGo=async inp=>{const fs=[...inp.files];inp.value='';let ok=0;for(const f of fs){try{const r=await post({action:'wpDoc',token:localStorage.getItem('wpTok')||'',nomor:RKT,foto:await shr(f)});if(!r.ok)throw new Error(r.msg);ok++}catch(e){toast(e.message||'Gagal',0);break}}if(ok)toast(ok+' foto dokumentasi tersimpan.');wpRekapLoad()};
+window.wpDocView=async no=>{$('wpMB').innerHTML=HEAD('Dokumentasi '+no)+'<p>Memuat…</p>';$('wpModal').classList.remove('hidden');try{const r=await post({action:'wpDocGet',token:localStorage.getItem('wpTok')||'',nomor:no});if(!r.ok)throw new Error(r.msg);$('wpMB').innerHTML=HEAD('Dokumentasi '+no)+(r.fotos.map((s,i)=>`<div class="text-center"><img src="${s}" class="mx-auto max-h-64 rounded-lg border"><a href="${s}" download="${no.replace(/\//g,'-')}_dok${i+1}.jpg" class="inline-block mt-1 font-bold text-emerald-700">⬇ Download</a></div>`).join('')||'<p class="text-slate-400 text-center">Belum ada dokumentasi.</p>')}catch(e){wpCloseM();toast(e.message||'Gagal',0)}};
 window.wpRekapCsv=()=>{const c=s=>'"'+String(s??'').replace(/"/g,'""')+'"',L=[['No','Nomor','Tanggal','Mitra','Pelaksana','Jenis','Lokasi','Mulai','Selesai','Pemilik Area','Tahap JSA','Status','Alasan Ditolak','Jumlah Foto']].concat(RK.map((x,i)=>[i+1,x.nomor,x.tanggal,x.mitra,x.pelaksana,x.jenis,x.lokasi,x.tm,x.ts,x.area,x.jsaTahap,x.status,x.alasanTolak,x.dok]));const a=document.createElement('a');a.href=URL.createObjectURL(new Blob(['\ufeff'+L.map(r=>r.map(c).join(',')).join('\n')],{type:'text/csv'}));a.download='Rekap-WorkPermit-JSA.csv';a.click()};
 window.wpRekapPrint=()=>{const w=window.open('','_blank');if(!w)return toast('Popup diblokir.',0);w.document.write(`<!DOCTYPE html><html><head><meta charset="utf-8"><title>Rekap Work Permit & JSA</title><style>body{font-family:Arial;font-size:10px;padding:12px}table{border-collapse:collapse;width:100%}td,th{border:1px solid #000;padding:3px 4px;vertical-align:top}th{background:#ddd}button{padding:8px 16px;background:#b91c1c;color:#fff;border:0;border-radius:6px;font-weight:bold}@media print{.np{display:none}@page{size:A4 landscape;margin:8mm}}</style></head><body><div class="np"><button onclick="print()">🖨️ Cetak</button></div><h3>REKAP LAPORAN WORK PERMIT & JSA — PT Kertas Padalarang</h3><p>Periode: ${E($('rkF').value)} s.d. ${E($('rkT').value)}</p><table><tr><th>No</th><th>Nomor</th><th>Tanggal</th><th>Mitra / Pelaksana</th><th>Jenis</th><th>Lokasi</th><th>Periode Kerja</th><th>Pemilik Area</th><th>JSA</th><th>Status</th><th>Dok.</th></tr>${RK.map((x,i)=>`<tr><td>${i+1}</td><td>${E(x.nomor)}</td><td>${E(x.tanggal)}</td><td>${E(x.mitra)}<br>${E(x.pelaksana)}</td><td>${E(x.jenis)}</td><td>${E(x.lokasi)}</td><td>${E(x.tm)} - ${E(x.ts)}</td><td>${E(x.area)}</td><td>${x.jsaTahap} tahap</td><td>${x.status}${x.alasanTolak?'<br>('+E(x.alasanTolak)+')':''}</td><td>${x.dok} foto</td></tr>`).join('')}</table></body></html>`);w.document.close()};
 
@@ -3645,7 +3637,7 @@ window.wpAsgUi=async(no,cur)=>{$('wpMB').innerHTML=HEAD('Pemilik Area — '+no)+
  $('wpMB').innerHTML=HEAD('Pemilik Area — '+no)+`<p class="text-slate-500">Ketik nomor register Pemilik Area. Notifikasi di aplikasi hanya muncul pada nomor tersebut, dan permit ini masuk ke daftarnya.</p><input id="asReg" value="${cur}" placeholder="Nomor register (mis. 1823 / p175)" class="w-full border rounded-xl px-3 py-2"><input id="asWa" placeholder="Nomor WhatsApp (mis. 0812-3456-7890) — ketik manual" class="w-full border rounded-xl px-3 py-2"><label class="font-semibold text-slate-600">Isi pesan WhatsApp (boleh diedit)</label><textarea id="asMsg" rows="11" class="w-full border rounded-xl p-2 text-[11px]">${E(waMsg(d,no))}</textarea><button id="asWaBtn" onclick="wpAssign('${no}',1)" class="w-full bg-emerald-600 text-white font-bold py-2.5 rounded-xl">📲 Kirim Notifikasi (Aplikasi + WhatsApp)</button><p class="text-[11px] text-slate-500">Nomor WhatsApp boleh dikosongkan — notifikasi di aplikasi tetap terkirim.</p>`};
 window.wpAssign=async(no,wa)=>{if(!regOk(val('asReg')))return toast('Nomor register tidak valid.',0);const n=waNum(val('asWa'));if(val('asWa')&&n.length<10)return toast('Nomor WhatsApp tidak valid.',0);const doWa=n.length>=10;
  const w=doWa?window.open('','_blank'):null;$('asWaBtn').disabled=true;const msg=val('asMsg');
- try{const r=await post({action:'wpAssign',adminPass:appCredentials.admin.pass,nomor:no,reg:val('asReg')});if(!r.ok)throw new Error(r.msg);
+ try{const r=await post({action:'wpAssign',token:localStorage.getItem('wpTok')||'',nomor:no,reg:val('asReg')});if(!r.ok)throw new Error(r.msg);
   if(w)w.location.href='https://wa.me/'+n+'?text='+encodeURIComponent(msg);
   wpCloseM();toast('Notifikasi terkirim ke register '+val('asReg').toLowerCase()+(doWa?'. WhatsApp dibuka, tekan kirim.':'.'));wpLoad()}
  catch(e){if(w)w.close();toast(e.message||'Gagal',0);$('asWaBtn').disabled=false}};
@@ -3656,15 +3648,29 @@ window.wpExtend=async no=>{const P=$('exP').checked,U=$('exU').checked;if(!P&&!U
  try{const r=await post({action:'wpExtend',...auth(),nomor:no,perpanjang:P,perubahan:U,alasan:val('exA'),tsBaru:val('exTs'),jsBaru:val('exJs')});if(!r.ok)throw new Error(r.msg);wpCloseM();
   if(r.perubahan){const g=await post({action:'wpGet',...auth(),nomor:no});buildForm();if(g.ok)fillForm(g.data);wpRev='';wpTab(0);toast('Permit lama ditutup. Silakan buat Work Permit & JSA baru, lalu tanda tangan.')}else{toast('Pengajuan perpanjangan terkirim ke Pemilik Area dan Unit K3.');wpLoad()}}catch(e){toast(e.message||'Gagal',0);$('exB').disabled=false}};
 window.wpExtReject=async no=>{if(val('rxA').length<5)return toast('Alasan menolak wajib diisi.',0);$('rxB').disabled=true;try{const r=await post({action:'wpExtReject',...auth(),nomor:no,alasan:val('rxA')});if(!r.ok)throw new Error(r.msg);wpCloseM();toast('Perpanjangan ditolak, pelaksana diberi tahu.');wpLoad()}catch(e){toast(e.message||'Gagal',0);$('rxB').disabled=false}};
-window.wpDel=async no=>{if(!confirm('Hapus permanen Work Permit & JSA '+no+'? Tindakan ini tidak dapat dibatalkan.'))return;try{const r=await post({action:'wpDelete',adminPass:appCredentials.admin.pass,nomor:no});if(!r.ok)throw new Error(r.msg);toast('Permit '+no+' dihapus.');wpLoad()}catch(e){toast(e.message||'Gagal',0)}};
+window.wpDel=async no=>{if(!confirm('Hapus permanen Work Permit & JSA '+no+'? Tindakan ini tidak dapat dibatalkan.'))return;try{const r=await post({action:'wpDelete',token:localStorage.getItem('wpTok')||'',nomor:no});if(!r.ok)throw new Error(r.msg);toast('Permit '+no+' dihapus.');wpLoad()}catch(e){toast(e.message||'Gagal',0)}};
+
+/* ---------- Kapasitas database & Berita Acara ---------- */
+let BAL=[];
+async function dbLoad(act){if(!$('profDb'))return;try{const r=await post({action:act||'wpDbStatus',token:localStorage.getItem('wpTok')||''});if(!r.ok)throw new Error(r.msg);BAL=r.ba;const c=r.pct>=90?'bg-red-500':r.pct>=80?'bg-amber-400':'bg-emerald-500';
+ $('profDb').innerHTML=`<div class="${card} text-xs"><h2 class="text-sm font-bold">🗄️ Kapasitas Database</h2><div class="h-3 bg-slate-200 rounded-full overflow-hidden"><div class="h-full ${c}" style="width:${Math.min(100,r.pct)}%"></div></div><p>${r.pct}% terpakai — ${Number(r.cells).toLocaleString('id-ID')} dari ${Number(r.limit).toLocaleString('id-ID')} sel (batas Google Sheets). Peringatan otomatis muncul di 🔔 pada 80%, 90%, dan 95%.</p><button onclick="dbPurge()" class="px-3 py-2 rounded-xl bg-red-600 text-white font-bold">🧹 Bersihkan data > 5 tahun sekarang</button><p class="text-slate-500">Pembersihan juga berjalan otomatis bila pemicu harian <b>dbPurge</b> dipasang. Setiap pembersihan membuat Berita Acara di bawah. Hanya data transaksi/log yang dihapus; master APAR dan APD tidak.</p><h3 class="font-bold pt-1">📄 Berita Acara Penghapusan Data</h3>${BAL.map((b,i)=>`<div class="flex justify-between items-center border-b py-1"><span><b>${E(b.nomor)}</b> · ${fmtT(b.tanggal)} · ${b.total} baris</span><button onclick="baPrint(${i})" class="font-bold text-slate-700">🖨️ Cetak</button></div>`).join('')||'<p class="text-slate-400">Belum ada.</p>'}</div>`}catch(e){$('profDb').innerHTML=''}}
+window.dbLoad=dbLoad;
+window.dbPurge=async()=>{if(!confirm('Hapus permanen semua data transaksi/log yang berumur lebih dari 5 tahun? Berita Acara akan dibuat otomatis. Pastikan Anda sudah memiliki cadangan.'))return;toast('Memproses…');await dbLoad('wpDbPurge');toast('Selesai. Cek Berita Acara.')};
+window.baPrint=i=>{const b=BAL[i],w=window.open('','_blank');if(!w)return toast('Popup diblokir.',0);const d=s=>new Date(s).toLocaleDateString('id-ID',{timeZone:'Asia/Jakarta',day:'numeric',month:'long',year:'numeric'});
+ w.document.write(`<!DOCTYPE html><html><head><meta charset="utf-8"><title>${E(b.nomor)}</title><style>body{font-family:Arial;font-size:12px;padding:24px}table{border-collapse:collapse;width:100%}td,th{border:1px solid #000;padding:5px}th{background:#ddd}button{padding:8px 16px;background:#b91c1c;color:#fff;border:0;border-radius:6px;font-weight:bold}@media print{.np{display:none}@page{size:A4;margin:14mm}}</style></head><body><div class="np"><button onclick="print()">🖨️ Cetak</button></div>
+<div style="display:flex;justify-content:space-between;align-items:center"><img src="${LG1}" style="height:40px"><img src="${LG2}" style="height:40px"></div><h3 style="text-align:center;margin:10px 0 2px">BERITA ACARA PENGHAPUSAN DATA</h3><p style="text-align:center;margin:0 0 14px">Nomor: ${E(b.nomor)}</p>
+<p>Pada hari ini, ${d(b.tanggal)}, sistem Portal K3 Terpadu PT Kertas Padalarang telah melakukan penghapusan data yang berumur lebih dari 5 (lima) tahun, yaitu data dengan tanggal sebelum <b>${d(b.batas)}</b>, dengan rincian sebagai berikut:</p>
+<table><tr><th>No</th><th>Kelompok Data (Sheet)</th><th>Jumlah Baris</th><th>Tanggal Terlama</th><th>Tanggal Terbaru</th></tr>${b.rincian.map((x,k)=>`<tr><td>${k+1}</td><td>${E(x.sheet)}</td><td style="text-align:center">${x.jumlah}</td><td>${E(x.dari)}</td><td>${E(x.sampai)}</td></tr>`).join('')}<tr><td colspan="2"><b>Total</b></td><td style="text-align:center"><b>${b.total}</b></td><td colspan="2"></td></tr></table>
+<p>Berkas foto/tanda tangan yang terkait dipindahkan ke tempat sampah Google Drive. Demikian Berita Acara ini dibuat untuk dipergunakan sebagaimana mestinya.</p>
+<div style="display:flex;justify-content:space-between;margin-top:40px;text-align:center"><div style="width:230px">Dibuat oleh,<br>Seksi K3LH<br><br><br><br>( ............................ )</div><div style="width:230px">Mengetahui,<br>Kepala Departemen<br><br><br><br><b><u>Dimas Andhika Yunanto</u></b></div></div></body></html>`);w.document.close()};
 /* ---------- Ikon notifikasi admin ---------- */
 let NB=[];
 const nbRender=()=>{const u=NB.filter(n=>!n.dibaca).length;Q('.nb-n').forEach(e=>{e.textContent=u>99?'99+':u;e.classList.toggle('hidden',!u)})};
 function nbList(){$('nbPanel').innerHTML=`<div class="flex justify-between items-center border-b pb-2 mb-1"><b>🔔 Notifikasi</b><button onclick="nbClose()" class="text-slate-400">✕</button></div>`+(NB.map(n=>`<div onclick="nbGo('${E(n.ref)}')" class="cursor-pointer border-b py-2 px-1 hover:bg-red-50 ${n.dibaca?'text-slate-400':'font-semibold'}"><div>${E(n.pesan)}</div><div class="text-[10px] text-slate-400">${fmtT(n.waktu)}</div></div>`).join('')||'<p class="text-slate-400 py-4 text-center">Belum ada notifikasi.</p>')}
 let prevU=-1;
-const nbRead=()=>isAdm()?post({action:'wpAdminNotifRead',adminPass:appCredentials.admin.pass}):post({action:'wpNotifRead',...auth()});
+const nbRead=()=>isAdm()?post({action:'wpAdminNotifRead',token:localStorage.getItem('wpTok')||''}):post({action:'wpNotifRead',...auth()});
 async function nbPoll(){const on=!!currentUser;Q('.nb-btn').forEach(b=>b.classList.toggle('hidden',!on));if(!on||document.hidden)return;
- try{let r;if(isAdm())r=await post({action:'wpAdminNotif',adminPass:appCredentials.admin.pass});else if(localStorage.getItem('wpTok')){r=await post({action:'wpNotif',...auth()});if(r.ok)r.list=r.list.map(n=>({waktu:n.waktu,pesan:n.pesan,ref:n.nomor,dibaca:n.dibaca}))}else return;
+ try{let r;if(isAdm())r=await post({action:'wpAdminNotif',token:localStorage.getItem('wpTok')||''});else if(localStorage.getItem('wpTok')){r=await post({action:'wpNotif',...auth()});if(r.ok)r.list=r.list.map(n=>({waktu:n.waktu,pesan:n.pesan,ref:n.nomor,dibaca:n.dibaca}))}else return;
   if(r.ok){NB=r.list;const u=NB.filter(n=>!n.dibaca).length;if(prevU>=0&&u>prevU&&!isAdm())toast('🔔 '+NB.find(n=>!n.dibaca).pesan);prevU=u;nbRender();const pn=$('nbPanel');if(pn&&!pn.classList.contains('hidden'))nbList()}}catch(e){}}
 setInterval(nbPoll,5000);setTimeout(nbPoll,1200);
 window.nbToggle=async()=>{let p=$('nbPanel');if(!p){p=document.createElement('div');p.id='nbPanel';p.className='hidden fixed top-16 right-3 z-[70] w-[340px] max-w-[92vw] max-h-[70vh] overflow-y-auto bg-white rounded-2xl shadow-2xl border p-3 text-xs no-print';document.body.appendChild(p)}
@@ -3738,7 +3744,7 @@ html.mob input,html.mob select,html.mob textarea{font-size:16px!important}
  window.mnOpen=()=>{$('mnDrawer').classList.add('on');$('mnBack').classList.add('on')};
  function ensure(){if($('mnDrawer'))return;const d=document.createElement('div');d.id='mnDrawer';d.className='mn-drawer';d.onclick=e=>{const bt=e.target.closest('button');if(bt){d.querySelectorAll('button').forEach(x=>x.dataset.on=x===bt?'1':'');mnClose()}};document.body.appendChild(d);
   const b=document.createElement('div');b.id='mnBack';b.className='mn-back';b.onclick=mnClose;document.body.appendChild(b);
-  const c=$('navButtonsContainer'),btn=document.createElement('button');btn.id='mnBtn';btn.innerHTML='☰';btn.onclick=mnOpen;btn.setAttribute('aria-label','Menu');c.parentElement.insertBefore(btn,c.parentElement.firstChild)}
+  const c=$('navButtonsContainer'),btn=document.createElement('button');btn.id='mnBtn';btn.innerHTML='<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#ffffff" stroke-width="3" stroke-linecap="round"><path d="M4 6h16M4 12h16M4 18h16"/></svg>';btn.onclick=mnOpen;btn.setAttribute('aria-label','Menu');c.parentElement.insertBefore(btn,c.parentElement.firstChild)}
  let busy=false;
  function layout(){const c=$('navButtonsContainer');if(!c||busy)return;ensure();busy=true;const d=$('mnDrawer'),mob=isMob();document.documentElement.classList.toggle('mob',mob);
   const mods=[...c.querySelectorAll('button')].filter(b=>MOD.test(b.getAttribute('onclick')||''));
@@ -3763,8 +3769,8 @@ html.mob select.fl-sel{font-size:12px!important;max-width:170px;padding:6px 8px}
 (function(){const L=['publicMarkersLayer','statusMarkersLayer','adminMarkersLayer'],ZM={},isMob=()=>Math.min(innerWidth,screen.width)<=768,G=id=>document.getElementById(id);
  function setZoom(lid,z){const l=G(lid);if(!l)return;const cv=l.parentElement,w=cv.parentElement;z=Math.max(1,Math.min(6,z));ZM[lid]=z;
   cv.style.width=z>1?(z*100)+'%':'';cv.style.maxWidth=z>1?'none':'';w.style.justifyContent=z>1?'flex-start':'';w.style.alignItems=z>1?'flex-start':'';
-  const D=Math.min(18,(isMob()?5:9)+2.5*(z-1));cv.style.setProperty('--md',D+'px');cv.style.setProperty('--mf',D>=11?(D*.6)+'px':'0px')}
- window.mapZoom=(lid,d)=>setZoom(lid,d===0?1:(ZM[lid]||1)+d);
+  cv.style.setProperty('--md',isMob()?'7px':'8px')}
+ window.mapZoom=(lid,d)=>setZoom(lid,d===0?1:(ZM[lid]||1)+d);window.__sz=setZoom;window.__zm=ZM;
  L.forEach(lid=>{const l=G(lid);if(!l)return;const bar=l.parentElement.querySelector('.fl-bar');if(!bar)return;l._home=l.parentElement;
   const z=document.createElement('div');z.className='fl-pill';z.title='Zoom peta';
   z.innerHTML=[['＋',0.75],['－',-0.75],['⟲',0]].map(x=>`<button type="button" class="fl-btn" aria-label="Zoom" onclick="mapZoom('${lid}',${x[1]})">${x[0]}</button>`).join('');
@@ -3775,6 +3781,26 @@ html.mob select.fl-sel{font-size:12px!important;max-width:170px;padding:6px 8px}
   else if(bar.classList.contains('fl-out')){l._home.appendChild(bar);bar.classList.remove('fl-out')}
   setZoom(lid,ZM[lid]||1)})}
  place();addEventListener('resize',place);addEventListener('orientationchange',()=>setTimeout(place,200))})();
+</script>
+<style>
+.map-marker{width:var(--md,8px)!important;height:var(--md,8px)!important;min-width:0!important;min-height:0!important;padding:0!important;font-size:0!important;line-height:1!important;border:1px solid #fff!important;box-shadow:0 0 0 1px rgba(0,0,0,.28);transition:width .12s,height .12s,font-size .12s;display:flex;align-items:center;justify-content:center}
+.map-marker:hover{width:19px!important;height:19px!important;font-size:9px!important;z-index:70!important}
+.fl2{border-radius:9999px!important;outline:none!important;border:2px solid #2563eb!important;box-shadow:0 0 0 1px #fff!important}.fl2::after{display:none!important}
+.pj-row{flex-wrap:nowrap;max-width:100%}.pj-row select{min-width:0;flex:1 1 0}.pj-row .pj-qty{width:64px;flex:none}.pj-row button{flex:none}
+</style>
+<script>
+(function(){const L=['publicMarkersLayer','statusMarkersLayer','adminMarkersLayer'];
+ function zoomAt(lid,f,cx,cy){const l=document.getElementById(lid);if(!l||!window.__sz)return;const cv=l.parentElement,w=cv.parentElement,z0=window.__zm[lid]||1,z1=Math.max(1,Math.min(6,z0*f));if(z1===z0)return;
+  const px=(w.scrollLeft+cx)/cv.offsetWidth,py=(w.scrollTop+cy)/cv.offsetHeight;window.__sz(lid,z1);w.scrollLeft=px*cv.offsetWidth-cx;w.scrollTop=py*cv.offsetHeight-cy}
+ L.forEach(lid=>{const l=document.getElementById(lid);if(!l)return;const w=l.parentElement.parentElement;w.style.touchAction='pan-x pan-y';
+  w.addEventListener('wheel',e=>{e.preventDefault();const r=w.getBoundingClientRect();zoomAt(lid,e.deltaY<0?1.18:1/1.18,e.clientX-r.left,e.clientY-r.top)},{passive:false});
+  let d0=0;const dist=t=>Math.hypot(t[0].clientX-t[1].clientX,t[0].clientY-t[1].clientY);
+  w.addEventListener('touchstart',e=>{if(e.touches.length===2)d0=dist(e.touches)},{passive:true});
+  w.addEventListener('touchmove',e=>{if(e.touches.length===2&&d0){e.preventDefault();const d=dist(e.touches),r=w.getBoundingClientRect();zoomAt(lid,d/d0,(e.touches[0].clientX+e.touches[1].clientX)/2-r.left,(e.touches[0].clientY+e.touches[1].clientY)/2-r.top);d0=d}},{passive:false});
+  w.addEventListener('touchend',()=>{d0=0},{passive:true})})})();
+</script>
+<script>
+if(currentUser&&!localStorage.getItem('wpTok')){handleLogout()}
 </script>
 </body>
 </html>
