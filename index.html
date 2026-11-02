@@ -1521,11 +1521,11 @@
             const p = document.getElementById('loginPass').value.trim();
 
             let matchedRole = null;
-            if (u === appCredentials.admin.user && p === appCredentials.admin.pass) {
+            if (u.toLowerCase() === String(appCredentials.admin.user).toLowerCase() && p.toLowerCase() === String(appCredentials.admin.pass).toLowerCase()) {
                 matchedRole = 'admin';
             } else if (u.toLowerCase() === 'karyawan' && (/^\d{4}$/.test(p) && Number(p) >= 1700 && Number(p) <= 2100 || /^p(17[1-9]|18[0-5])$/i.test(p))) {
                 matchedRole = 'peserta'; // karyawan: password = nomor register 1700-2100
-            } else if (p === 'vendor123' && u && u.toLowerCase() !== 'karyawan' && u !== appCredentials.admin.user) {
+            } else if (p.toLowerCase() === 'vendor123' && u && u.toLowerCase() !== 'karyawan' && u.toLowerCase() !== String(appCredentials.admin.user).toLowerCase()) {
                 matchedRole = 'peserta'; // vendor: username = nama perusahaan
             }
 
@@ -3577,7 +3577,7 @@ function act(x){const c=CFG[x.rel];if(!c||x.status==='DITOLAK')return null;const
  const pv=x.rel==='area'?'selesai_pp':x.rel==='admin'?'selesai_pa':'';if(pv&&!h(pv))return['⏳ Menunggu '+(x.rel==='area'?'Pelaksana Pekerjaan':'Pemilik Area'),null];
  return['✍️ Selesaikan',m(c[1])]}
 async function wpLoad(){try{const r=await post({action:'wpList',...auth()});if(!r.ok){expired(r.msg);throw 0}
- $('wpList').innerHTML=`<div class="${card} text-xs"><div class="flex justify-between"><h2 class="text-sm font-bold">${isAdm()?'Daftar & Persetujuan Work Permit + JSA':'Daftar Work Permit'}</h2><button onclick="wpLoad()" class="font-bold text-red-700">↻ Muat ulang</button></div><div class="table-container"><table class="w-full min-w-[720px]"><thead class="bg-slate-100"><tr><th class="px-2 py-2 text-left">Nomor</th><th class="text-left">Tanggal</th><th class="text-left">Mitra</th><th class="text-left">Jenis</th><th class="text-left">Lokasi</th><th>Status</th><th>Aksi</th></tr></thead><tbody>${r.list.map(x=>{const a=act(x);return `<tr class="border-t"><td class="px-2 py-2 font-bold">${E(x.nomor)}${x.rel==='admin'?`<div class="font-normal text-[10px] text-slate-500">Pemilik Area: ${E(x.areaReg||'belum ditentukan')}</div>`:''}${x.tolak&&x.status==='DITOLAK'?`<div class="font-normal text-[10px] text-red-600">Ditolak ${E(x.tolak.oleh)}: ${E(x.tolak.alasan)}</div>`:''}</td><td>${E(x.tanggal)}</td><td>${E(x.mitra)}</td><td>${E(x.jenis)}</td><td>${E(x.lokasi)}</td><td class="text-center"><span class="px-2 py-0.5 rounded-full font-bold ${BD[x.status]||''}">${x.status}</span>${x.exp?`<div class="text-[9px] text-orange-600">Kedaluwarsa</div>`:''}${x.ext&&x.ext.status==='MENUNGGU'?`<div class="text-[9px] text-orange-600">Pengajuan perpanjangan s.d. ${E(x.ext.tsBaru)}<br>${E(x.ext.alasan)}</div>`:''}${x.ext&&x.ext.status==='DITOLAK'&&x.rel==='pp'&&x.ext.tolak?`<div class="text-[9px] text-red-600">Perpanjangan ditolak: ${E(x.ext.tolak.alasan)}</div>`:''}</td><td class="whitespace-nowrap text-center"><button onclick="wpPrint('${x.nomor}')" class="font-bold text-slate-700">🖨️ Cetak</button>${a?(a[1]?` <button onclick="wpSignUi('${x.nomor}','${a[1]}')" class="font-bold text-blue-700">${a[0]}</button>`:` <span class="text-slate-400">${a[0]}</span>`):''}${x.rel==='admin'&&(x.status==='DIAJUKAN'||x.status==='DISETUJUI')?` <button onclick="wpAsgUi('${x.nomor}','${x.areaReg||''}')" class="font-bold text-indigo-700">📣 Pemilik Area</button>`:''}${x.rel==='pp'&&x.status==='DISETUJUI'&&!(x.ext&&x.ext.status==='MENUNGGU')?` <button onclick="wpExtUi('${x.nomor}')" class="font-bold text-orange-700">🔁 Perpanjang/Ubah</button>`:''}${x.rel==='pp'&&x.status==='DITOLAK'?` <button onclick="wpFix('${x.nomor}')" class="font-bold text-red-700">🛠️ Perbaiki</button>`:''}</td></tr>`}).join('')||'<tr><td colspan="7" class="text-center py-6 text-slate-400">Belum ada permit.</td></tr>'}</tbody></table></div></div>`}catch(e){if(e!==0)$('wpList').innerHTML=`<div class="${card} text-xs">Gagal memuat. Pastikan Code.gs terbaru sudah di-deploy.</div>`}
+ $('wpList').innerHTML=`<div class="${card} text-xs"><div class="flex justify-between"><h2 class="text-sm font-bold">${isAdm()?'Daftar & Persetujuan Work Permit + JSA':'Daftar Work Permit'}</h2><button onclick="wpLoad()" class="font-bold text-red-700">↻ Muat ulang</button></div><div class="table-container"><table class="w-full min-w-[720px]"><thead class="bg-slate-100"><tr><th class="px-2 py-2 text-left">Nomor</th><th class="text-left">Tanggal</th><th class="text-left">Mitra</th><th class="text-left">Jenis</th><th class="text-left">Lokasi</th><th>Status</th><th>Aksi</th></tr></thead><tbody>${r.list.map(x=>{const a=act(x);return `<tr class="border-t"><td class="px-2 py-2 font-bold">${E(x.nomor)}${x.rel==='admin'?`<div class="font-normal text-[10px] text-slate-500">Pemilik Area: ${E(x.areaReg||'belum ditentukan')}</div>`:''}${x.tolak&&x.status==='DITOLAK'?`<div class="font-normal text-[10px] text-red-600">Ditolak ${E(x.tolak.oleh)}: ${E(x.tolak.alasan)}</div>`:''}</td><td>${E(x.tanggal)}</td><td>${E(x.mitra)}</td><td>${E(x.jenis)}</td><td>${E(x.lokasi)}</td><td class="text-center"><span class="px-2 py-0.5 rounded-full font-bold ${BD[x.status]||''}">${x.status}</span>${x.exp?`<div class="text-[9px] text-orange-600">Kedaluwarsa</div>`:''}${x.ext&&x.ext.status==='MENUNGGU'?`<div class="text-[9px] text-orange-600">Pengajuan perpanjangan s.d. ${E(x.ext.tsBaru)}<br>${E(x.ext.alasan)}</div>`:''}${x.ext&&x.ext.status==='DITOLAK'&&x.rel==='pp'&&x.ext.tolak?`<div class="text-[9px] text-red-600">Perpanjangan ditolak: ${E(x.ext.tolak.alasan)}</div>`:''}</td><td class="whitespace-nowrap text-center"><button onclick="wpPrint('${x.nomor}')" class="font-bold text-slate-700">🖨️ Cetak</button>${x.rel==='admin'?` <button onclick="wpDel('${x.nomor}')" class="font-bold text-red-700">🗑 Hapus</button>`:''}${a?(a[1]?` <button onclick="wpSignUi('${x.nomor}','${a[1]}')" class="font-bold text-blue-700">${a[0]}</button>`:` <span class="text-slate-400">${a[0]}</span>`):''}${x.rel==='admin'&&(x.status==='DIAJUKAN'||x.status==='DISETUJUI')?` <button onclick="wpAsgUi('${x.nomor}','${x.areaReg||''}')" class="font-bold text-indigo-700">📣 Pemilik Area</button>`:''}${x.rel==='pp'&&x.status==='DISETUJUI'&&!(x.ext&&x.ext.status==='MENUNGGU')?` <button onclick="wpExtUi('${x.nomor}')" class="font-bold text-orange-700">🔁 Perpanjang/Ubah</button>`:''}${x.rel==='pp'&&x.status==='DITOLAK'?` <button onclick="wpFix('${x.nomor}')" class="font-bold text-red-700">🛠️ Perbaiki</button>`:''}</td></tr>`}).join('')||'<tr><td colspan="7" class="text-center py-6 text-slate-400">Belum ada permit.</td></tr>'}</tbody></table></div></div>`}catch(e){if(e!==0)$('wpList').innerHTML=`<div class="${card} text-xs">Gagal memuat. Pastikan Code.gs terbaru sudah di-deploy.</div>`}
  }
 window.wpLoad=wpLoad;
 window.wpLogs=wpLogs;async function wpLogs(){try{const r=await post({action:'wpLogins',adminPass:appCredentials.admin.pass});if(!r.ok||!$('profLogs'))return;$('profLogs').innerHTML=`<div class="${card} text-xs"><h2 class="text-sm font-bold">🔔 Riwayat Login (siapa & kapan)</h2><div class="table-container" style="max-height:260px"><table class="w-full"><thead class="bg-slate-100"><tr><th class="text-left px-2 py-1">Waktu</th><th class="text-left">Pengguna</th><th class="text-left">Jenis</th></tr></thead><tbody>${r.list.map(l=>`<tr class="border-t"><td class="px-2 py-1 whitespace-nowrap">${fmtT(l.waktu)}</td><td>${E(l.user)}${l.reg?' (Reg '+E(l.reg)+')':''}</td><td>${E(l.kind)}</td></tr>`).join('')||'<tr><td colspan="3" class="text-center py-3 text-slate-400">Belum ada.</td></tr>'}</tbody></table></div></div>`}catch(e){}}
@@ -3649,10 +3649,6 @@ window.wpAssign=async(no,wa)=>{if(!regOk(val('asReg')))return toast('Nomor regis
   if(w)w.location.href='https://wa.me/'+n+'?text='+encodeURIComponent(msg);
   wpCloseM();toast('Notifikasi terkirim ke register '+val('asReg').toLowerCase()+(doWa?'. WhatsApp dibuka, tekan kirim.':'.'));wpLoad()}
  catch(e){if(w)w.close();toast(e.message||'Gagal',0);$('asWaBtn').disabled=false}};
-document.body.insertAdjacentHTML('beforeend','<button id="wpBell" onclick="wpBellGo()" class="hidden fixed bottom-20 right-4 z-40 bg-red-600 text-white font-bold rounded-full shadow-xl px-4 py-3 text-xs no-print">🔔 <span id="wpBellN"></span> Work Permit</button>');
-window.wpBellGo=async()=>{try{await post({action:'wpNotifRead',...auth()})}catch(e){}$('wpBell').classList.add('hidden');switchModule('wp');wpTab(1)};
-setInterval(async()=>{const b=$('wpBell');if(!currentUser||isAdm()||currentUser.kind!=='karyawan'||!localStorage.getItem('wpTok')||document.hidden){if(b)b.classList.add('hidden');return}
- try{const r=await post({action:'wpNotif',...auth()});if(!r.ok||!r.list.length){b.classList.add('hidden');return}$('wpBellN').textContent=r.list.length;b.classList.remove('hidden');const seen=+localStorage.getItem('wpNotifSeen')||0,mx=Math.max(...r.list.map(n=>n.id));if(mx>seen){const n=r.list.find(n=>n.id===mx);toast('🔔 '+n.nomor+': '+n.pesan);localStorage.setItem('wpNotifSeen',mx)}}catch(e){}},15000);
 
 /* ---------- Perpanjang / ubah izin kerja ---------- */
 window.wpExtUi=no=>{$('wpMB').innerHTML=HEAD('Perubahan Izin Kerja — '+no)+`<label class="flex gap-2"><input type="checkbox" id="exP" onchange="$x()"> Perpanjang pelaksanaan pekerjaan</label><label class="flex gap-2"><input type="checkbox" id="exU"> Perubahan pekerjaan <span class="text-slate-400">(permit ini ditutup, lalu buat Work Permit & JSA baru)</span></label><div id="exT" class="hidden grid grid-cols-2 gap-2">${inp('exTs','Tgl selesai baru','date')}${inp('exJs','Jam selesai baru','time')}</div><textarea id="exA" rows="3" placeholder="Alasan * (wajib)" class="w-full border rounded-xl p-2"></textarea><div class="flex gap-2"><button id="exB" onclick="wpExtend('${no}')" class="flex-1 bg-orange-600 text-white font-bold py-2.5 rounded-xl">Ajukan</button><button onclick="wpCloseM()" class="bg-slate-200 font-bold px-5 rounded-xl">Batal</button></div>`;window.$x=()=>$('exT').classList.toggle('hidden',!$('exP').checked);$('wpModal').classList.remove('hidden')};
@@ -3660,14 +3656,19 @@ window.wpExtend=async no=>{const P=$('exP').checked,U=$('exU').checked;if(!P&&!U
  try{const r=await post({action:'wpExtend',...auth(),nomor:no,perpanjang:P,perubahan:U,alasan:val('exA'),tsBaru:val('exTs'),jsBaru:val('exJs')});if(!r.ok)throw new Error(r.msg);wpCloseM();
   if(r.perubahan){const g=await post({action:'wpGet',...auth(),nomor:no});buildForm();if(g.ok)fillForm(g.data);wpRev='';wpTab(0);toast('Permit lama ditutup. Silakan buat Work Permit & JSA baru, lalu tanda tangan.')}else{toast('Pengajuan perpanjangan terkirim ke Pemilik Area dan Unit K3.');wpLoad()}}catch(e){toast(e.message||'Gagal',0);$('exB').disabled=false}};
 window.wpExtReject=async no=>{if(val('rxA').length<5)return toast('Alasan menolak wajib diisi.',0);$('rxB').disabled=true;try{const r=await post({action:'wpExtReject',...auth(),nomor:no,alasan:val('rxA')});if(!r.ok)throw new Error(r.msg);wpCloseM();toast('Perpanjangan ditolak, pelaksana diberi tahu.');wpLoad()}catch(e){toast(e.message||'Gagal',0);$('rxB').disabled=false}};
+window.wpDel=async no=>{if(!confirm('Hapus permanen Work Permit & JSA '+no+'? Tindakan ini tidak dapat dibatalkan.'))return;try{const r=await post({action:'wpDelete',adminPass:appCredentials.admin.pass,nomor:no});if(!r.ok)throw new Error(r.msg);toast('Permit '+no+' dihapus.');wpLoad()}catch(e){toast(e.message||'Gagal',0)}};
 /* ---------- Ikon notifikasi admin ---------- */
 let NB=[];
 const nbRender=()=>{const u=NB.filter(n=>!n.dibaca).length;Q('.nb-n').forEach(e=>{e.textContent=u>99?'99+':u;e.classList.toggle('hidden',!u)})};
 function nbList(){$('nbPanel').innerHTML=`<div class="flex justify-between items-center border-b pb-2 mb-1"><b>🔔 Notifikasi</b><button onclick="nbClose()" class="text-slate-400">✕</button></div>`+(NB.map(n=>`<div onclick="nbGo('${E(n.ref)}')" class="cursor-pointer border-b py-2 px-1 hover:bg-red-50 ${n.dibaca?'text-slate-400':'font-semibold'}"><div>${E(n.pesan)}</div><div class="text-[10px] text-slate-400">${fmtT(n.waktu)}</div></div>`).join('')||'<p class="text-slate-400 py-4 text-center">Belum ada notifikasi.</p>')}
-async function nbPoll(){const adm=currentUser&&isAdm();Q('.nb-btn').forEach(b=>b.classList.toggle('hidden',!adm));if(!adm||document.hidden)return;try{const r=await post({action:'wpAdminNotif',adminPass:appCredentials.admin.pass});if(r.ok){NB=r.list;nbRender();const p=$('nbPanel');if(p&&!p.classList.contains('hidden'))nbList()}}catch(e){}}
+let prevU=-1;
+const nbRead=()=>isAdm()?post({action:'wpAdminNotifRead',adminPass:appCredentials.admin.pass}):post({action:'wpNotifRead',...auth()});
+async function nbPoll(){const on=!!currentUser;Q('.nb-btn').forEach(b=>b.classList.toggle('hidden',!on));if(!on||document.hidden)return;
+ try{let r;if(isAdm())r=await post({action:'wpAdminNotif',adminPass:appCredentials.admin.pass});else if(localStorage.getItem('wpTok')){r=await post({action:'wpNotif',...auth()});if(r.ok)r.list=r.list.map(n=>({waktu:n.waktu,pesan:n.pesan,ref:n.nomor,dibaca:n.dibaca}))}else return;
+  if(r.ok){NB=r.list;const u=NB.filter(n=>!n.dibaca).length;if(prevU>=0&&u>prevU&&!isAdm())toast('🔔 '+NB.find(n=>!n.dibaca).pesan);prevU=u;nbRender();const pn=$('nbPanel');if(pn&&!pn.classList.contains('hidden'))nbList()}}catch(e){}}
 setInterval(nbPoll,5000);setTimeout(nbPoll,1200);
 window.nbToggle=async()=>{let p=$('nbPanel');if(!p){p=document.createElement('div');p.id='nbPanel';p.className='hidden fixed top-16 right-3 z-[70] w-[340px] max-w-[92vw] max-h-[70vh] overflow-y-auto bg-white rounded-2xl shadow-2xl border p-3 text-xs no-print';document.body.appendChild(p)}
- if(!p.classList.toggle('hidden')){nbList();try{await post({action:'wpAdminNotifRead',adminPass:appCredentials.admin.pass});NB.forEach(n=>n.dibaca=true);nbRender()}catch(e){}}};
+ if(!p.classList.toggle('hidden')){nbList();try{await nbRead();NB.forEach(n=>n.dibaca=true);nbRender()}catch(e){}}};
 window.nbClose=()=>{const p=$('nbPanel');if(p)p.classList.add('hidden')};
 window.nbGo=ref=>{nbClose();if(/^WP-/.test(ref)){switchModule('wp');wpTab(1)}else if(ref==='APD')switchModule('apd');else if(ref==='APAR')switchModule('apar');else if(ref==='TEMUAN')switchModule('temuan')};
 const cb=x=>x?'☑':'☐',dt=s=>s?new Date(s).toLocaleDateString('id-ID',{day:'numeric',month:'long',year:'numeric'}):'';
@@ -3715,5 +3716,33 @@ img{max-width:100%;height:auto}
  main,.max-w-7xl{padding-left:10px!important;padding-right:10px!important}
 }
 </style>
+<style>
+#mnBtn{display:none}
+@media (max-width:768px){
+ #mnBtn{display:flex;align-items:center;justify-content:center;width:36px;height:36px;border-radius:10px;background:rgba(255,255,255,.15);color:#fff;font-size:18px;border:0;margin-right:6px}
+ .mn-back{position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:90;opacity:0;pointer-events:none;transition:opacity .25s}.mn-back.on{opacity:1;pointer-events:auto}
+ .mn-drawer{position:fixed;top:0;left:0;bottom:0;width:78vw;max-width:300px;background:#fff;z-index:95;transform:translateX(-102%);transition:transform .28s ease;padding:14px 12px;display:flex;flex-direction:column;gap:6px;box-shadow:6px 0 24px rgba(0,0,0,.25)}.mn-drawer.on{transform:none}
+ .mn-drawer .mn-h{font-weight:800;color:#991b1b;padding:4px 8px 10px;border-bottom:1px solid #e2e8f0;margin-bottom:4px}
+ .mn-drawer button.mn-i{display:flex!important;width:100%;justify-content:flex-start;background:#f8fafc!important;color:#0f172a!important;border-radius:12px!important;padding:12px 14px!important;font-size:14px!important;transform:none!important;box-shadow:none!important}
+ .mn-drawer button.mn-i:active,.mn-drawer button.mn-i:hover{background:#fee2e2!important}
+ #navButtonsContainer{margin-left:auto}
+}
+</style>
+<script>
+(function(){const $=id=>document.getElementById(id),MOD=/switchModule\('(apar|temuan|apd|wp)'\)/;
+ function mnClose(){$('mnDrawer').classList.remove('on');$('mnBack').classList.remove('on')}
+ window.mnOpen=()=>{$('mnDrawer').classList.add('on');$('mnBack').classList.add('on')};
+ function ensure(){if($('mnDrawer'))return;const d=document.createElement('div');d.id='mnDrawer';d.className='mn-drawer';d.onclick=e=>{if(e.target.closest('button.mn-i'))mnClose()};document.body.appendChild(d);
+  const b=document.createElement('div');b.id='mnBack';b.className='mn-back';b.onclick=mnClose;document.body.appendChild(b);
+  const c=$('navButtonsContainer'),btn=document.createElement('button');btn.id='mnBtn';btn.innerHTML='☰';btn.onclick=mnOpen;btn.setAttribute('aria-label','Menu');c.parentElement.insertBefore(btn,c.parentElement.firstChild)}
+ let busy=false;
+ function layout(){const c=$('navButtonsContainer');if(!c||busy)return;ensure();busy=true;const d=$('mnDrawer'),mob=innerWidth<=768;
+  const mods=[...c.querySelectorAll('button')].filter(b=>MOD.test(b.getAttribute('onclick')||''));
+  if(mob&&mods.length){d.innerHTML='<div class="mn-h">☰ Menu — Portal K3 Terpadu</div>';mods.forEach(b=>{b.classList.add('mn-i');d.appendChild(b)})}
+  else if(!mob){const ds=[...d.querySelectorAll('button.mn-i')];ds.forEach(b=>{b.classList.remove('mn-i');c.insertBefore(b,c.firstChild)});d.innerHTML=''}
+  busy=false}
+ const c=$('navButtonsContainer');if(c){new MutationObserver(()=>setTimeout(layout,0)).observe(c,{childList:true});layout()}
+ addEventListener('resize',layout)})();
+</script>
 </body>
 </html>
