@@ -3721,8 +3721,10 @@ img{max-width:100%;height:auto}
 .mn-back{position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:90;opacity:0;pointer-events:none;transition:opacity .25s}.mn-back.on{opacity:1;pointer-events:auto}
 .mn-drawer{position:fixed;top:0;left:0;bottom:0;width:78vw;max-width:300px;background:#fff;z-index:95;transform:translateX(-102%);transition:transform .28s ease;padding:14px 12px;display:flex;flex-direction:column;gap:6px;box-shadow:6px 0 24px rgba(0,0,0,.25)}.mn-drawer.on{transform:none}
 .mn-drawer .mn-h{font-weight:800;color:#991b1b;padding:4px 8px 10px;border-bottom:1px solid #e2e8f0;margin-bottom:4px}
-.mn-drawer button.mn-i{display:flex!important;width:100%;justify-content:flex-start;background:#f8fafc!important;color:#0f172a!important;border-radius:12px!important;padding:12px 14px!important;font-size:14px!important;transform:none!important;box-shadow:none!important}
-.mn-drawer button.mn-i:active,.mn-drawer button.mn-i:hover{background:#fee2e2!important}
+.mn-drawer button{display:flex!important;width:100%;justify-content:flex-start;background:#f8fafc!important;color:#0f172a!important;border-radius:12px!important;padding:12px 14px!important;font-size:14px!important;transform:none!important;box-shadow:none!important}
+.mn-drawer button:active,.mn-drawer button:hover{background:#fee2e2!important}
+.mn-drawer button[data-on="1"]{background:#fee2e2!important;color:#991b1b!important;font-weight:700!important;box-shadow:inset 3px 0 0 #b91c1c!important}
+.mn-drawer button{border:0!important;margin:0!important;text-align:left!important;gap:8px!important;animation:none!important}
 html.mob #mnBtn{display:flex;align-items:center;justify-content:center;width:36px;height:36px;border-radius:10px;background:rgba(255,255,255,.15);color:#fff;font-size:18px;border:0;margin-right:6px;flex-shrink:0}
 html.mob header>div{flex-wrap:nowrap!important;gap:6px}
 html.mob #navButtonsContainer{margin-left:auto;flex-shrink:0}
@@ -3734,14 +3736,14 @@ html.mob input,html.mob select,html.mob textarea{font-size:16px!important}
  const isMob=()=>Math.min(innerWidth,screen.width)<=768;
  function mnClose(){$('mnDrawer').classList.remove('on');$('mnBack').classList.remove('on')}
  window.mnOpen=()=>{$('mnDrawer').classList.add('on');$('mnBack').classList.add('on')};
- function ensure(){if($('mnDrawer'))return;const d=document.createElement('div');d.id='mnDrawer';d.className='mn-drawer';d.onclick=e=>{if(e.target.closest('button.mn-i'))mnClose()};document.body.appendChild(d);
+ function ensure(){if($('mnDrawer'))return;const d=document.createElement('div');d.id='mnDrawer';d.className='mn-drawer';d.onclick=e=>{const bt=e.target.closest('button');if(bt){d.querySelectorAll('button').forEach(x=>x.dataset.on=x===bt?'1':'');mnClose()}};document.body.appendChild(d);
   const b=document.createElement('div');b.id='mnBack';b.className='mn-back';b.onclick=mnClose;document.body.appendChild(b);
   const c=$('navButtonsContainer'),btn=document.createElement('button');btn.id='mnBtn';btn.innerHTML='☰';btn.onclick=mnOpen;btn.setAttribute('aria-label','Menu');c.parentElement.insertBefore(btn,c.parentElement.firstChild)}
  let busy=false;
  function layout(){const c=$('navButtonsContainer');if(!c||busy)return;ensure();busy=true;const d=$('mnDrawer'),mob=isMob();document.documentElement.classList.toggle('mob',mob);
   const mods=[...c.querySelectorAll('button')].filter(b=>MOD.test(b.getAttribute('onclick')||''));
   if(mob&&mods.length){d.innerHTML='<div class="mn-h">☰ Menu — Portal K3 Terpadu</div>';mods.forEach(b=>{b.classList.add('mn-i');d.appendChild(b)})}
-  else if(!mob){[...d.querySelectorAll('button.mn-i')].forEach(b=>{b.classList.remove('mn-i');c.insertBefore(b,c.firstChild)});d.innerHTML=''}
+  else if(!mob){[...d.querySelectorAll('button')].forEach(b=>{b.classList.remove('mn-i');delete b.dataset.on;c.insertBefore(b,c.firstChild)});d.innerHTML=''}
   busy=false}
  document.documentElement.classList.toggle('mob',isMob());
  const c=$('navButtonsContainer');if(c){new MutationObserver(()=>setTimeout(layout,0)).observe(c,{childList:true});layout()}
