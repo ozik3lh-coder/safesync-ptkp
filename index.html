@@ -2,7 +2,7 @@
 <html lang="id">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=1280, minimum-scale=0.1, maximum-scale=5, user-scalable=yes">
+    <meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1, maximum-scale=5">
     <title>PORTAL K3 TERPADU - PT KERTAS PADALARANG</title>
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
@@ -721,6 +721,7 @@
             </div>
 
             <!-- MODUL 3: STOK APD -->
+            <div id="modulWp" class="hidden space-y-4"></div>
             <div id="modulApd" class="hidden space-y-4"><div id="apdNew" class="space-y-4"></div><div id="apdLegacyHidden" class="hidden">
                 <div class="bg-white rounded-2xl shadow-lg p-5 md:p-6 border border-slate-100 space-y-3" id="adminApdStockSection">
                     <div class="flex justify-between items-center border-b pb-2 flex-wrap gap-2">
@@ -764,7 +765,7 @@
             </div>
 
             <!-- MODUL 4: PROFIL / MANAJEMEN AKUN & PENGATURAN FITUR (HANYA ADMIN) -->
-            <div id="modulProfile" class="hidden space-y-4">
+            <div id="modulProfile" class="hidden space-y-4"><div id="profLogs"></div>
                 <div class="bg-white rounded-2xl shadow-lg p-5 md:p-6 border border-slate-100 max-w-2xl mx-auto space-y-4 text-xs md:text-sm">
                     <div class="border-b pb-3">
                         <h2 class="text-base font-bold text-slate-800">Manajemen Akun & Pengaturan Akses Fitur</h2>
@@ -1461,7 +1462,9 @@
                     <button onclick="switchModule('apar')" id="navApar" class="bg-red-700 text-white px-3 py-1.5 rounded-xl text-xs font-bold shadow-md transition-all duration-200 transform hover:scale-105 whitespace-nowrap flex items-center gap-1"><span>🧯</span> Rekap APAR</button>
                     <button onclick="switchModule('temuan')" id="navTemuan" class="bg-red-800/80 hover:bg-red-700 text-white px-3 py-1.5 rounded-xl text-xs font-semibold shadow transition-all duration-200 whitespace-nowrap flex items-center gap-1"><span>⚠️</span> Temuan</button>
                     <button onclick="switchModule('apd')" id="navApd" class="bg-red-800/80 hover:bg-red-700 text-white px-3 py-1.5 rounded-xl text-xs font-semibold shadow transition-all duration-200 whitespace-nowrap flex items-center gap-1"><span>⛑️</span> APD</button>
+<button onclick="switchModule('wp')" class="bg-red-800/80 hover:bg-red-700 text-white px-3 py-1.5 rounded-xl text-xs font-semibold shadow transition-all duration-200 whitespace-nowrap flex items-center gap-1">🧾 Work Permit &amp; JSA</button>
                     <button onclick="switchModule('profile')" id="navProfile" class="bg-slate-800 hover:bg-slate-700 text-white px-2.5 py-1.5 rounded-xl text-xs font-semibold shadow transition-all duration-200 whitespace-nowrap" title="Pengaturan Akun & Akses">👤</button>
+                    <button onclick="nbToggle()" class="nb-btn hidden relative bg-slate-800 hover:bg-slate-700 text-white px-2.5 py-1.5 rounded-xl text-xs shadow" title="Notifikasi">🔔<span class="nb-n hidden absolute -top-1.5 -right-1.5 bg-red-600 text-white text-[10px] font-bold rounded-full min-w-[18px] h-[18px] flex items-center justify-center"></span></button>
                     <button onclick="handleLogout()" class="bg-red-950 hover:bg-black text-white px-3 py-1.5 rounded-xl text-xs font-semibold shadow transition-all duration-200 whitespace-nowrap flex items-center gap-1"><span>⬅️</span> Keluar</button>
                 `;
 
@@ -1484,6 +1487,8 @@
                     <button onclick="switchModule('apar')" id="navApar" class="bg-red-700 text-white px-3 py-1.5 rounded-xl text-xs font-bold shadow-md transition-all duration-200 transform hover:scale-105 whitespace-nowrap flex items-center gap-1"><span>🧯</span> APAR</button>
                     <button onclick="switchModule('temuan')" id="navTemuan" class="bg-red-800/80 hover:bg-red-700 text-white px-3 py-1.5 rounded-xl text-xs font-semibold shadow transition-all duration-200 whitespace-nowrap flex items-center gap-1"><span>⚠️</span> Temuan</button>
                     <button onclick="switchModule('apd')" id="navApd" class="bg-red-800/80 hover:bg-red-700 text-white px-3 py-1.5 rounded-xl text-xs font-semibold shadow transition-all duration-200 whitespace-nowrap flex items-center gap-1"><span>⛑️</span> APD</button>
+<button onclick="switchModule('wp')" class="bg-red-800/80 hover:bg-red-700 text-white px-3 py-1.5 rounded-xl text-xs font-semibold shadow transition-all duration-200 whitespace-nowrap flex items-center gap-1">🧾 Work Permit &amp; JSA</button>
+                    <button onclick="nbToggle()" class="nb-btn hidden relative bg-slate-800 hover:bg-slate-700 text-white px-2.5 py-1.5 rounded-xl text-xs shadow" title="Notifikasi">🔔<span class="nb-n hidden absolute -top-1.5 -right-1.5 bg-red-600 text-white text-[10px] font-bold rounded-full min-w-[18px] h-[18px] flex items-center justify-center"></span></button>
                     <button onclick="handleLogout()" class="bg-red-950 hover:bg-black text-white px-3 py-1.5 rounded-xl text-xs font-semibold shadow transition-all duration-200 whitespace-nowrap flex items-center gap-1"><span>⬅️</span> Keluar</button>
                 `;
 
@@ -1518,12 +1523,17 @@
             let matchedRole = null;
             if (u === appCredentials.admin.user && p === appCredentials.admin.pass) {
                 matchedRole = 'admin';
-            } else if (u === appCredentials.karyawan.user && p === appCredentials.karyawan.pass) {
-                matchedRole = 'peserta';
+            } else if (u.toLowerCase() === 'karyawan' && (/^\d{4}$/.test(p) && Number(p) >= 1700 && Number(p) <= 2100 || /^p(17[1-9]|18[0-5])$/i.test(p))) {
+                matchedRole = 'peserta'; // karyawan: password = nomor register 1700-2100
+            } else if (p === 'vendor123' && u && u.toLowerCase() !== 'karyawan' && u !== appCredentials.admin.user) {
+                matchedRole = 'peserta'; // vendor: username = nama perusahaan
             }
 
             if (matchedRole) {
-                currentUser = { username: u, name: matchedRole === 'admin' ? 'Dimas Andhika (Admin)' : u, role: matchedRole };
+                const lgKind = matchedRole === 'admin' ? 'admin' : (u.toLowerCase() === 'karyawan' ? 'karyawan' : 'vendor'); const lgReg = lgKind === 'karyawan' ? p.toLowerCase() : '';
+                currentUser = { username: u, name: matchedRole === 'admin' ? 'Dimas Andhika (Admin)' : (lgKind === 'karyawan' ? 'Karyawan ' + p : u), role: matchedRole, kind: lgKind, reg: lgReg };
+                try { fetch(SCRIPT_URL, { method: 'POST', headers: { 'Content-Type': 'text/plain;charset=utf-8' }, body: JSON.stringify({ action: 'wpLoginLog', user: u, kind: lgKind, reg: lgReg }) }); } catch (e) {}
+                if (lgKind !== 'admin') { try { fetch(SCRIPT_URL, { method: 'POST', headers: { 'Content-Type': 'text/plain;charset=utf-8' }, body: JSON.stringify({ action: 'wpAuth', role: 'pelaksana', username: u, password: p, appUser: u, appReg: lgReg }) }).then(function (r) { return r.json(); }).then(function (r) { if (r && r.token) localStorage.setItem('wpTok', r.token); }); } catch (e) {} } else { localStorage.removeItem('wpTok'); }
                 localStorage.setItem('k3_current_user', JSON.stringify(currentUser));
                 closeLoginModal();
                 checkAuthSession();
@@ -2071,7 +2081,7 @@
         }
 
         async function openAparDetailPopup(aparCode) {
-            await initQrListStorage();
+            if (!qrList || !qrList.length) await initQrListStorage();
 
             let item = qrList.find(q => q.code.toLowerCase() === aparCode.toLowerCase());
             if(!item) item = backupQrList.find(q => q.code.toLowerCase() === aparCode.toLowerCase());
@@ -3490,5 +3500,220 @@ FLAYERS.forEach(lid=>{const l=document.getElementById(lid);if(!l)return;
   l._sel=s}}
  new MutationObserver(()=>{if(l._sel&&document.activeElement!==l._sel)window['fill_'+lid]();decorate(lid)}).observe(l,{childList:true})});
 </script>
+<script>
+const _swm=window.switchModule;
+window.switchModule=function(m){if(m==='profile'&&currentUser&&currentUser.role==='admin')setTimeout(()=>window.wpLogs&&wpLogs(),80);if(currentUser&&currentUser.kind==='vendor'){m='wp';document.querySelectorAll('button[onclick^="switchModule("]').forEach(b=>{if(!/'wp'/.test(b.getAttribute('onclick')))b.style.display='none'})}if(m==='wp'){['modulApar','modulTemuan','modulApd','modulLocked','modulProfile'].forEach(i=>{const e=document.getElementById(i);if(e)e.classList.add('hidden')});document.getElementById('modulWp').classList.remove('hidden');wpEnter();return}document.getElementById('modulWp').classList.add('hidden');return _swm.apply(this,arguments)};
+</script>
+<script>
+(()=>{
+const A=SCRIPT_URL,$=id=>document.getElementById(id),Q=(s,r=document)=>r.querySelectorAll(s);
+const E=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const isAdm=()=>currentUser&&currentUser.role==='admin';
+const post=async p=>{const r=await(await fetch(A,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify(p)})).json();if(r.ok===undefined)throw new Error('Server belum memuat modul Work Permit. Tempel Code.gs terbaru lalu Deploy > New version.');return r};
+const toast=(m,ok=1)=>{const d=document.createElement('div');d.className='fixed bottom-5 left-1/2 -translate-x-1/2 z-[80] px-4 py-2.5 rounded-xl text-xs font-bold text-white shadow-lg '+(ok?'bg-emerald-600':'bg-red-600');d.textContent=m;document.body.appendChild(d);setTimeout(()=>d.remove(),3800)};
+const JENIS=['Pekerjaan Galian','Pekerjaan Listrik','Pekerjaan Panas','Pekerjaan Ketinggian','Pekerjaan Kimia','Ruang Terbatas','Lainnya'];
+const APDL=['Safety Helm','Safety Shoes/Boots','Full Body Harness','Kacamata Pengaman','Faceshield','Sarung Tangan (sesuai pekerjaan)','Earplug/Earmuff','Lainnya'];
+const KESL=['APAR','LOTO','Safety line','Rambu','Fire Blanket','Tabung Oksigen','Scafolding','Lainnya'];
+const ITEM=['Terdapat SOP/JSA sebelum memulai pekerjaan','Peralatan yang digunakan telah diperiksa dan dalam kondisi baik','Tersedia kotak P3K dan memenuhi syarat perundangan','Terdapat rambu sebagai tanda adanya pekerjaan (galian & confined space)','Terdapat jalur evakuasi disekitar tempat kerja apabila terjadi keadaan darurat','Pemakaian APD sesuai dengan jenis pekerjaan','Terdapat dinding penahan tanah (turap) saat pekerjaan galian','Tanah galian segera dipindahkan agar tidak terjadi longsor','Terdapat pengawasan saat melaksanakan pekerjaan','Sumber listrik telah dimatikan, jika melakukan pekerjaan listrik','Pemberian tanda pada sumber listrik yang dimatikan (LOTO)','Bahan yang mudah terbakar disingkirkan dan dilindungi material tahan api','Terdapat rambu atau tanda untuk bahan yang mudah terbakar dan beracun','Alat penyalur petir kondisi layak','Scafolding atau tangga terpasang dengan baik','MSDS telah dipahami oleh pekerja yang terlibat saat menggunakan bahan kima','Terdapat petugas tersertifikasi K3 sesuai kebutuhan','Pemakaian SCBA dan peralatan lainya untuk pekerjaan terbatas','Pekerjaan membutuhkan aliran listrik','Pengujian Gas',''];
+const card='bg-white rounded-2xl shadow-lg p-4 md:p-6 border border-slate-100 space-y-3';
+const inp=(id,l,t='text',c='')=>`<div class="${c}"><label class="block font-semibold text-slate-600 mb-1">${l}</label><input id="${id}" type="${t}" class="w-full px-3 py-2 border rounded-xl shadow-sm"></div>`;
+const chk=(p,a)=>a.map((x,i)=>`<label class="flex items-center gap-2"><input type="checkbox" class="${p}" value="${i}"> ${x}${x==='Lainnya'?` <input id="${p}Lain" class="border rounded px-2 py-0.5 w-40" placeholder="sebutkan">`:''}</label>`).join('');
+const pad=(k,l)=>`<div><p class="font-semibold text-slate-600 mb-1">${l}</p><canvas data-sg="${k}" width="300" height="100" class="w-full border-2 border-dashed rounded-xl bg-slate-50" style="touch-action:none"></canvas><div class="flex gap-2 items-center mt-1"><input data-nm="${k}" placeholder="Nama terang" class="flex-1 border rounded px-2 py-1"><button type="button" onclick="wpClr('${k}')" class="text-red-600 font-bold">Hapus</button></div></div>`;
+const pos=(c,e)=>{const r=c.getBoundingClientRect();return[(e.clientX-r.left)*c.width/r.width,(e.clientY-r.top)*c.height/r.height]};
+const cv=e=>e.target.closest&&e.target.closest('canvas[data-sg]');
+document.addEventListener('pointerdown',e=>{const c=cv(e);if(!c)return;const x=c.getContext('2d');x.lineWidth=2.5;x.lineCap='round';x.strokeStyle='#0f172a';c._r=1;c.setPointerCapture(e.pointerId);x.beginPath();x.moveTo(...pos(c,e))});
+document.addEventListener('pointermove',e=>{const c=cv(e);if(!c||!c._r)return;const x=c.getContext('2d');x.lineTo(...pos(c,e));x.stroke();c._d=1});
+document.addEventListener('pointerup',e=>{const c=cv(e);if(c)c._r=0});
+window.wpClr=k=>{const c=document.querySelector(`canvas[data-sg="${k}"]`);c.getContext('2d').clearRect(0,0,c.width,c.height);c._d=0};
+const sigs=r=>{const o={},n={};Q('canvas[data-sg]',r).forEach(c=>{if(c._d)o[c.dataset.sg]=c.toDataURL('image/png')});Q('[data-nm]',r).forEach(i=>{if(i.value.trim())n[i.dataset.nm]=i.value.trim()});return{o,n}};
+
+/* ---------- Sesi (otomatis dari login aplikasi), shell ---------- */
+let lastLogin=localStorage.getItem('wpLastLogin')||'';
+const auth=()=>isAdm()?{adminPass:appCredentials.admin.pass}:{token:localStorage.getItem('wpTok')||''};
+const roleOf=()=>isAdm()?'admin':'pelaksana';
+const expired=m=>{if(/Sesi/.test(m||''))toast('Sesi Work Permit berakhir. Silakan logout lalu login ulang.',0)};
+const fmtT=s=>new Date(s).toLocaleString('id-ID',{timeZone:'Asia/Jakarta',day:'2-digit',month:'short',hour:'2-digit',minute:'2-digit',second:'2-digit',hour12:false}).replace(/\./g,':');
+window.wpEnter=()=>{buildShell();wpTab(roleOf()==='pelaksana'?0:1)};
+function buildShell(){const r=roleOf();
+ $('modulWp').innerHTML=`<div id="wpRoot" class="space-y-4"><div class="${card} !p-3 flex flex-wrap gap-2 items-center text-xs">${r==='pelaksana'?'<button id="wpT0" onclick="wpTab(0)" class="px-3.5 py-2 rounded-xl font-bold">📝 Buat Work Permit + JSA</button>':''}<button id="wpT1" onclick="wpTab(1)" class="px-3.5 py-2 rounded-xl font-bold">📚 ${r==='admin'?'Daftar & Persetujuan':'Daftar Permit'}</button>${r==='admin'?'<button id="wpT2" onclick="wpTab(2)" class="px-3.5 py-2 rounded-xl font-bold">📊 Rekap Laporan</button>':''}<span class="ml-auto text-slate-500">${r==='admin'?'Admin K3LH':E(currentUser.name||currentUser.username)+' · '+(currentUser.kind==='vendor'?'Vendor':'Karyawan')}</span></div><div id="wpForm" class="hidden"></div><div id="wpList" class="hidden"></div><div id="wpRekap" class="hidden"></div></div>`;if(r==='pelaksana')buildForm()}
+window.wpTab=i=>{[0,1,2].forEach(k=>{const b=$('wpT'+k);if(b)b.className='px-3.5 py-2 rounded-xl font-bold '+(k===i?'bg-red-600 text-white shadow':'bg-slate-100 text-slate-700');const e=$(['wpForm','wpList','wpRekap'][k]);if(e)e.classList.toggle('hidden',k!==i)});if(i===1)wpLoad();if(i===2)wpRekapLoad()};
+function buildForm(){
+ $('wpForm').innerHTML=`<div class="${card} text-xs"><h2 class="text-sm md:text-base font-bold text-slate-800">FORMULIR IZIN KERJA AMAN (WORK PERMIT) · K3LH-FR-06 Rev.01</h2><p class="text-slate-500">Nomor dibuat otomatis oleh sistem saat dikirim. JSA (K3LH-FR-08) diisi pada form yang sama dan otomatis terhubung ke nomor permit.</p>
+ <h3 class="font-bold text-red-700 pt-2">1. Mitra Kerja</h3><div class="grid md:grid-cols-3 gap-3">${inp('wpTgl','Tanggal','date')}${inp('wpMitra','Nama Pelaksana & Mitra Kerja *')}${inp('wpPj','Penanggung Jawab *')}${inp('wpArea','Nomor Register Pemilik Area (opsional — dapat ditentukan admin)')}${inp('wpAreaNm','Nama Pemilik Area (opsional)')}${inp('wpAlamat','Alamat Mitra Kerja','text','md:col-span-2')}${inp('wpTelp','No. Telepon')}</div>
+ <h3 class="font-bold text-red-700 pt-2">2. Jenis Pekerjaan *</h3><div class="grid grid-cols-2 md:grid-cols-4 gap-2">${chk('wpJ',JENIS)}</div>
+ <div class="grid md:grid-cols-2 gap-3"><div><label class="block font-semibold text-slate-600 mb-1">Deskripsi pekerjaan & peralatan yang digunakan *</label><textarea id="wpDesk" rows="4" class="w-full px-3 py-2 border rounded-xl"></textarea></div><div>${inp('wpLok','Lokasi Pekerjaan *')}<div class="grid grid-cols-2 gap-2 mt-2">${inp('wpTm','Tgl mulai','date')}${inp('wpJm','Jam mulai','time')}${inp('wpTs','Tgl selesai','date')}${inp('wpJs','Jam selesai','time')}</div></div></div>
+ <div class="grid md:grid-cols-2 gap-4"><div><h3 class="font-bold text-red-700 mb-1">3. Alat Pelindung Diri</h3><div class="grid grid-cols-2 gap-1">${chk('wpA',APDL)}</div></div><div><h3 class="font-bold text-red-700 mb-1">4. Perlengkapan Keselamatan</h3><div class="grid grid-cols-2 gap-1">${chk('wpK',KESL)}</div></div></div>
+ <h3 class="font-bold text-red-700 pt-2">5. Item Pemeriksaan (Y / T)</h3><p class="text-[11px] text-slate-500"><b>Y</b> = Ya (sesuai / terpenuhi) · <b>T</b> = Tidak (belum sesuai / tidak terpenuhi). Klik 2x pada pilihan untuk membatalkan.</p><div class="grid md:grid-cols-2 gap-x-6 gap-y-1">${ITEM.map((t,i)=>`<div class="flex items-center gap-2 border-b py-1"><span class="w-5 font-bold">${i+1}</span><span class="flex-1">${t||`<input id="wpI21" class="w-full border rounded px-2 py-0.5" placeholder="Item tambahan (opsional)">`}</span><label><input type="radio" name="ck${i+1}" value="Y"> Y</label><label><input type="radio" name="ck${i+1}" value="T"> T</label></div>`).join('')}</div>
+ <p class="font-semibold text-slate-600 pt-2">Pengujian gas (Waktu & Hasil)</p><div class="grid grid-cols-3 gap-2">${inp('wpGmt','Mudah terbakar')}${inp('wpGgb','Gas beracun')}${inp('wpGox','Oksigen')}</div>
+ <h3 class="font-bold text-red-700 pt-2">Job Safety Analysis (K3LH-FR-08)</h3><div class="grid md:grid-cols-3 gap-3">${inp('jsPel','Nama Pelaksana Pekerjaan')}${inp('jsKerja','Nama Pekerjaan')}${inp('jsUnit','Pelaksana Unit K3')}</div>
+ <div id="jsRows" class="space-y-2"></div><button type="button" onclick="jsAdd()" class="px-3 py-2 rounded-xl bg-slate-100 font-bold">＋ Tambah Tahap Pekerjaan</button>
+ <p class="text-[11px] text-slate-500">Catatan: Formulir JSA harus diisi dengan cermat dan terperinci. Pastikan seluruh pekerja memahami JSA sebelum melakukan pekerjaan.</p>
+ <h3 class="font-bold text-red-700 pt-2">Tanda Tangan Pemohon *</h3><div class="grid md:grid-cols-2 gap-3">${pad('pp','Pemohon Izin Kerja — Pelaksana Pekerjaan')}${pad('jsa_pp','JSA — Pelaksana Pekerjaan')}</div>
+ <p class="text-[11px] text-slate-500">Pemilik Area (karyawan dengan nomor register di atas) dan Pelaksana Unit K3 wajib membuka JSA dan mengisi checklist sebelum menandatangani dari menu Daftar Permit.</p>
+ <button id="wpSend" onclick="wpSubmit()" class="w-full bg-gradient-to-r from-red-600 to-red-700 text-white font-bold py-3 rounded-xl shadow-md">Ajukan Work Permit + JSA</button></div>`;
+ for(let i=0;i<4;i++)jsAdd();$('wpTgl').value=new Date().toISOString().slice(0,10)}
+window.jsAdd=()=>{const n=$('jsRows').children.length+1,d=document.createElement('div');d.className='grid grid-cols-2 md:grid-cols-6 gap-2 items-start border rounded-xl p-2 bg-slate-50';d.innerHTML=`<b class="pt-2">No. ${n}</b>`+['Tahap Pekerjaan','Potensi Bahaya','Risiko','Upaya Pengendalian','Tanggung Jawab'].map(p=>`<textarea rows="2" placeholder="${p}" class="js border rounded px-2 py-1"></textarea>`).join('');$('jsRows').appendChild(d)};
+let wpRev='';
+const regOk=s=>{s=String(s).trim().toLowerCase();return /^\d{4}$/.test(s)&&+s>=1700&&+s<=2100||/^p(17[1-9]|18[0-5])$/.test(s)};
+const val=id=>$(id).value.trim(),ckd=c=>[...Q('.'+c)].filter(x=>x.checked).map(x=>+x.value);
+window.wpSubmit=async()=>{const R=$('wpForm'),g=sigs(R),jsa=[...$('jsRows').children].map(r=>[...Q('.js',r)].map(t=>t.value.trim())).filter(r=>r.some(x=>x));
+ if(!val('wpMitra')||!val('wpPj')||!val('wpDesk')||!val('wpLok'))return toast('Lengkapi data bertanda *.',0);
+ if(val('wpArea')&&!regOk(val('wpArea')))return toast('Nomor register Pemilik Area tidak valid.',0);
+ if(!ckd('wpJ').length)return toast('Pilih minimal 1 jenis pekerjaan.',0);if(!jsa.length)return toast('Isi minimal 1 tahap pekerjaan pada JSA.',0);
+ if(!g.o.pp||!g.o.jsa_pp)return toast('Tanda tangan Pemohon (Work Permit & JSA) wajib diisi.',0);
+ const cek={};for(let i=1;i<=21;i++){const r=document.querySelector(`input[name=ck${i}]:checked`);if(r)cek[i]=r.value}if(!cek[1])cek[1]='Y';
+ const data={areaReg:val('wpArea'),areaNama:val('wpAreaNm'),tanggal:val('wpTgl'),mitra:val('wpMitra'),alamat:val('wpAlamat'),telp:val('wpTelp'),pj:val('wpPj'),jenis:ckd('wpJ'),jenisLain:val('wpJLain'),desk:val('wpDesk'),lokasi:val('wpLok'),tm:val('wpTm'),jm:val('wpJm'),ts:val('wpTs'),js:val('wpJs'),apd:ckd('wpA'),apdLain:val('wpALain'),kes:ckd('wpK'),kesLain:val('wpKLain'),cek,item21:val('wpI21'),gas:{mt:val('wpGmt'),gb:val('wpGgb'),ox:val('wpGox')},jsa:{pelaksana:val('jsPel'),kerja:val('jsKerja'),unit:val('jsUnit'),rows:jsa},sig:g.o,nama:g.n};
+ const b=$('wpSend');b.disabled=true;b.textContent='Mengirim…';
+ try{const r=await post({action:wpRev?'wpRevise':'wpCreate',...auth(),nomor:wpRev,data});if(!r.ok){expired(r.msg);throw new Error(r.msg)}toast('✅ Terkirim. Nomor: '+r.nomor);wpRev='';buildForm();wpTab(1)}catch(e){toast(e.message||'Gagal',0)}finally{b.disabled=false;b.textContent='Ajukan Work Permit + JSA'}};
+
+/* ---------- Daftar, persetujuan, cetak ---------- */
+const BD={DITOLAK:'bg-red-100 text-red-700',DIAJUKAN:'bg-amber-100 text-amber-700',DISETUJUI:'bg-blue-100 text-blue-700',SELESAI:'bg-emerald-100 text-emerald-700'};
+const LBL={pa:'Pemberi Izin — Pemilik Area',u3:'Pemberi Izin — Pelaksana Unit K3',jsa_pa:'JSA — Pemilik Area',jsa_unit:'JSA — Pelaksana Unit K3',selesai_pp:'Penyelesaian — Pelaksana Pekerjaan',selesai_pa:'Penyelesaian — Pemilik Area',selesai_u3:'Penyelesaian — Pelaksana Unit K3',ext_pa:'Persetujuan Perpanjangan — Pemilik Area',ext_u3:'Persetujuan Perpanjangan — Pelaksana Unit K3'};
+const CFG={admin:[['u3','jsa_unit'],['selesai_u3']],area:[['pa','jsa_pa'],['selesai_pa']],pp:[[],['selesai_pp']]};
+function act(x){const c=CFG[x.rel];if(!c||x.status==='DITOLAK')return null;const s=x.sigs||[],h=k=>s.includes(k),m=a=>a.filter(k=>!h(k)).join(',');
+ if(x.ext&&x.ext.status==='MENUNGGU'&&x.status==='DISETUJUI'){if(x.rel==='area')return h('ext_pa')?['⏳ Perpanjangan: menunggu Unit K3',null]:['✍️ Setujui Perpanjangan','ext_pa'];if(x.rel==='admin')return !h('ext_pa')?['⏳ Perpanjangan: menunggu Pemilik Area',null]:h('ext_u3')?null:['✍️ Setujui Perpanjangan','ext_u3'];return['⏳ Perpanjangan diproses',null]}
+ if(c[0].some(k=>!h(k)))return x.rel==='admin'&&!h('pa')?['⏳ Menunggu Pemilik Area',null]:['✍️ Setujui',m(c[0])];
+ if(x.status!=='DISETUJUI'||!c[1].some(k=>!h(k)))return null;
+ const pv=x.rel==='area'?'selesai_pp':x.rel==='admin'?'selesai_pa':'';if(pv&&!h(pv))return['⏳ Menunggu '+(x.rel==='area'?'Pelaksana Pekerjaan':'Pemilik Area'),null];
+ return['✍️ Selesaikan',m(c[1])]}
+async function wpLoad(){try{const r=await post({action:'wpList',...auth()});if(!r.ok){expired(r.msg);throw 0}
+ $('wpList').innerHTML=`<div class="${card} text-xs"><div class="flex justify-between"><h2 class="text-sm font-bold">${isAdm()?'Daftar & Persetujuan Work Permit + JSA':'Daftar Work Permit'}</h2><button onclick="wpLoad()" class="font-bold text-red-700">↻ Muat ulang</button></div><div class="table-container"><table class="w-full min-w-[720px]"><thead class="bg-slate-100"><tr><th class="px-2 py-2 text-left">Nomor</th><th class="text-left">Tanggal</th><th class="text-left">Mitra</th><th class="text-left">Jenis</th><th class="text-left">Lokasi</th><th>Status</th><th>Aksi</th></tr></thead><tbody>${r.list.map(x=>{const a=act(x);return `<tr class="border-t"><td class="px-2 py-2 font-bold">${E(x.nomor)}${x.rel==='admin'?`<div class="font-normal text-[10px] text-slate-500">Pemilik Area: ${E(x.areaReg||'belum ditentukan')}</div>`:''}${x.tolak&&x.status==='DITOLAK'?`<div class="font-normal text-[10px] text-red-600">Ditolak ${E(x.tolak.oleh)}: ${E(x.tolak.alasan)}</div>`:''}</td><td>${E(x.tanggal)}</td><td>${E(x.mitra)}</td><td>${E(x.jenis)}</td><td>${E(x.lokasi)}</td><td class="text-center"><span class="px-2 py-0.5 rounded-full font-bold ${BD[x.status]||''}">${x.status}</span>${x.exp?`<div class="text-[9px] text-orange-600">Kedaluwarsa</div>`:''}${x.ext&&x.ext.status==='MENUNGGU'?`<div class="text-[9px] text-orange-600">Pengajuan perpanjangan s.d. ${E(x.ext.tsBaru)}<br>${E(x.ext.alasan)}</div>`:''}${x.ext&&x.ext.status==='DITOLAK'&&x.rel==='pp'&&x.ext.tolak?`<div class="text-[9px] text-red-600">Perpanjangan ditolak: ${E(x.ext.tolak.alasan)}</div>`:''}</td><td class="whitespace-nowrap text-center"><button onclick="wpPrint('${x.nomor}')" class="font-bold text-slate-700">🖨️ Cetak</button>${a?(a[1]?` <button onclick="wpSignUi('${x.nomor}','${a[1]}')" class="font-bold text-blue-700">${a[0]}</button>`:` <span class="text-slate-400">${a[0]}</span>`):''}${x.rel==='admin'&&(x.status==='DIAJUKAN'||x.status==='DISETUJUI')?` <button onclick="wpAsgUi('${x.nomor}','${x.areaReg||''}')" class="font-bold text-indigo-700">📣 Pemilik Area</button>`:''}${x.rel==='pp'&&x.status==='DISETUJUI'&&!(x.ext&&x.ext.status==='MENUNGGU')?` <button onclick="wpExtUi('${x.nomor}')" class="font-bold text-orange-700">🔁 Perpanjang/Ubah</button>`:''}${x.rel==='pp'&&x.status==='DITOLAK'?` <button onclick="wpFix('${x.nomor}')" class="font-bold text-red-700">🛠️ Perbaiki</button>`:''}</td></tr>`}).join('')||'<tr><td colspan="7" class="text-center py-6 text-slate-400">Belum ada permit.</td></tr>'}</tbody></table></div></div>`}catch(e){if(e!==0)$('wpList').innerHTML=`<div class="${card} text-xs">Gagal memuat. Pastikan Code.gs terbaru sudah di-deploy.</div>`}
+ }
+window.wpLoad=wpLoad;
+window.wpLogs=wpLogs;async function wpLogs(){try{const r=await post({action:'wpLogins',adminPass:appCredentials.admin.pass});if(!r.ok||!$('profLogs'))return;$('profLogs').innerHTML=`<div class="${card} text-xs"><h2 class="text-sm font-bold">🔔 Riwayat Login (siapa & kapan)</h2><div class="table-container" style="max-height:260px"><table class="w-full"><thead class="bg-slate-100"><tr><th class="text-left px-2 py-1">Waktu</th><th class="text-left">Pengguna</th><th class="text-left">Jenis</th></tr></thead><tbody>${r.list.map(l=>`<tr class="border-t"><td class="px-2 py-1 whitespace-nowrap">${fmtT(l.waktu)}</td><td>${E(l.user)}${l.reg?' (Reg '+E(l.reg)+')':''}</td><td>${E(l.kind)}</td></tr>`).join('')||'<tr><td colspan="3" class="text-center py-3 text-slate-400">Belum ada.</td></tr>'}</tbody></table></div></div>`}catch(e){}}
+let LQ=[],LQb=false;
+function showLogin(){if(LQb||!LQ.length)return;LQb=true;const l=LQ.shift(),d=document.createElement('div');d.className='fixed bottom-4 left-4 z-[85] bg-slate-900 text-white text-xs rounded-xl shadow-2xl px-4 py-3';d.innerHTML='🔔 <b>'+E(l.user)+'</b>'+(l.reg?' (Reg '+E(l.reg)+')':'')+' login<br><span class="text-slate-300">'+fmtT(l.waktu)+'</span>';document.body.appendChild(d);setTimeout(()=>{d.remove();LQb=false;showLogin()},4500)}
+async function pollLogin(){if(!currentUser||!isAdm()||document.hidden)return;try{const r=await post({action:'wpLogins',adminPass:appCredentials.admin.pass});if(!r.ok||!r.list.length)return;const nw=r.list.filter(l=>l.waktu>lastLogin&&l.kind!=='admin').reverse();if(lastLogin)LQ.push(...nw);lastLogin=r.list[0].waktu;localStorage.setItem('wpLastLogin',lastLogin);showLogin()}catch(e){}}
+setInterval(pollLogin,5000);setTimeout(pollLogin,1500);
+document.body.insertAdjacentHTML('beforeend','<div id="wpModal" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-black/60 px-3 no-print"><div id="wpMB" class="bg-white rounded-2xl shadow-2xl w-full max-w-lg max-h-[92vh] overflow-y-auto p-5 space-y-3 text-xs"></div></div>');
+window.wpCloseM=()=>$('wpModal').classList.add('hidden');
+$('wpModal').addEventListener('click',e=>{if(e.target.id==='wpModal')wpCloseM()});
+let vkJ=false;
+const FOOT=(no,dis)=>`<div class="flex gap-2"><button id="wpSg" onclick="wpSign('${no}')" ${dis?'disabled':''} class="flex-1 bg-emerald-600 text-white font-bold py-2.5 rounded-xl disabled:opacity-40">Simpan</button><button onclick="wpCloseM()" class="bg-slate-200 font-bold px-5 rounded-xl">Batal</button></div>`;
+const HEAD=no=>`<div class="flex justify-between items-center border-b pb-2"><h3 class="text-sm font-bold">Tanda Tangan — ${no}</h3><button onclick="wpCloseM()" class="text-slate-500 font-bold text-base px-2" aria-label="Tutup">✕</button></div>`;
+window.wpSignUi=async(no,slots)=>{const P=slots.split(','),appr=P.some(k=>['pa','u3','jsa_pa','jsa_unit'].includes(k));vkJ=false;
+ if(!appr){const ex=P.some(k=>k.startsWith('ext_'));let inf='';
+  if(ex){try{const r=await post({action:'wpGet',...auth(),nomor:no});if(r.ok&&r.data.ext)inf=`<div class="border rounded-xl p-3 bg-orange-50"><b>Pengajuan Perpanjangan</b><br>Pelaksana: ${E(r.data.pj)} · Selesai baru: <b>${E(r.data.ext.tsBaru)} ${E(r.data.ext.jsBaru||'')}</b><br>Alasan: ${E(r.data.ext.alasan)}</div>`}catch(e){}}
+  $('wpMB').innerHTML=HEAD(no)+inf+P.map(k=>pad(k,LBL[k])).join('')+(ex?`<div class="border border-red-200 rounded-xl p-3"><p class="font-bold text-red-700 mb-1">⛔ Tolak perpanjangan</p><textarea id="rxA" rows="2" placeholder="Alasan menolak *" class="w-full border rounded-xl p-2"></textarea><button id="rxB" onclick="wpExtReject('${no}')" class="mt-2 bg-red-600 text-white font-bold px-4 py-2 rounded-xl">Tolak Perpanjangan</button></div>`:'')+FOOT(no,0);$('wpModal').classList.remove('hidden');return}
+ $('wpMB').innerHTML=HEAD(no)+'<p>Memuat JSA…</p>';$('wpModal').classList.remove('hidden');
+ try{const r=await post({action:'wpGet',...auth(),nomor:no});if(!r.ok)throw new Error(r.msg);const d=r.data,k=r.rel==='admin'?'u3':'pa';
+ $('wpMB').innerHTML=HEAD(no)+`<div class="border rounded-xl p-3 bg-slate-50"><p class="font-bold mb-1">① Buka & baca JSA <span id="vkJ" class="text-red-600">(belum dibuka)</span></p><button type="button" onclick="vkOpen('${no}')" class="px-3 py-1.5 rounded-lg bg-slate-800 text-white font-bold">📄 Buka JSA</button><div id="vkJsa" class="hidden mt-2 table-container" style="max-height:230px"><table class="w-full min-w-[520px]"><thead class="bg-slate-200"><tr><th class="p-1">No</th><th class="p-1 text-left">Tahap Pekerjaan</th><th class="p-1 text-left">Potensi Bahaya</th><th class="p-1 text-left">Risiko</th><th class="p-1 text-left">Upaya Pengendalian</th><th class="p-1 text-left">Tgg. Jawab</th></tr></thead><tbody>${d.jsa.rows.map((q,i)=>`<tr class="border-t align-top"><td class="p-1 text-center">${i+1}</td>${[0,1,2,3,4].map(c=>`<td class="p-1">${E(q[c]||'')}</td>`).join('')}</tr>`).join('')}</tbody></table></div></div>
+ <div id="vkCk" class="border rounded-xl p-3 opacity-40 pointer-events-none"><p class="font-bold mb-1">② Checklist verifikasi — periksa kesesuaian permit</p><p class="text-[11px] text-slate-500 mb-1"><b>Y</b> = Ya (sesuai / terpenuhi) · <b>T</b> = Tidak (belum sesuai / tidak terpenuhi). Abu-abu = pilihan Pelaksana, boleh ditimpa. Klik 2x untuk membatalkan.</p>${ITEM.slice(0,20).map((t,i)=>`<div class="vkr flex items-center gap-2 border-b py-1 ${(d.cek||{})[i+1]?'vkpre':''}"><span class="w-5 font-bold">${i+1}</span><span class="flex-1">${t}</span>${['Y','T'].map(v=>`<label><input type="radio" name="vk${i+1}" value="${v}" ${(d.cek||{})[i+1]===v?'checked':''} onchange="this.closest('.vkr').classList.remove('vkpre');vkChk()"> ${v}</label>`).join('')}</div>`).join('')}</div>
+ <div id="vkPads" class="space-y-3 opacity-40 pointer-events-none"><p class="font-bold">③ Tanda tangan</p>${P.map(q=>pad(q,LBL[q])).join('')}</div><div class="border border-red-200 rounded-xl p-3"><p class="font-bold text-red-700 mb-1">⛔ Tolak permit ini</p><textarea id="rjAlasan" rows="2" placeholder="Alasan menolak *" class="w-full border rounded-xl p-2"></textarea><button id="rjBtn" onclick="wpReject('${no}')" class="mt-2 bg-red-600 text-white font-bold px-4 py-2 rounded-xl">Tolak Permit</button></div>`+FOOT(no,1);
+ if(d.jsaOpened&&d.jsaOpened[k]){vkJ=true;$('vkJ').textContent='(sudah dibuka)';$('vkJ').className='text-emerald-600';$('vkCk').classList.remove('opacity-40','pointer-events-none');vkChk()}}catch(e){wpCloseM();toast(e.message||'Gagal',0)}};
+window.vkOpen=async no=>{$('vkJsa').classList.remove('hidden');if(vkJ)return;try{const r=await post({action:'wpJsaOpen',...auth(),nomor:no});if(!r.ok)throw new Error(r.msg);vkJ=true;$('vkJ').textContent='(sudah dibuka)';$('vkJ').className='text-emerald-600';$('vkCk').classList.remove('opacity-40','pointer-events-none')}catch(e){toast(e.message||'Gagal',0)}};
+window.vkChk=()=>{let n=0;for(let i=1;i<=20;i++)if(document.querySelector(`input[name=vk${i}]:checked`))n++;const ok=vkJ&&n===20;$('vkPads').classList.toggle('opacity-40',!ok);$('vkPads').classList.toggle('pointer-events-none',!ok);$('wpSg').disabled=!ok};
+window.wpSign=async no=>{const g=sigs($('wpMB'));if(!Object.keys(g.o).length)return toast('Isi minimal satu tanda tangan.',0);const b=$('wpSg');b.disabled=true;
+ const cek={};for(let i=1;i<=20;i++){const x=document.querySelector(`input[name=vk${i}]:checked`);if(x)cek[i]=x.value}
+ try{const r=await post({action:'wpSign',...auth(),nomor:no,sigs:g.o,names:g.n,cek});if(!r.ok){expired(r.msg);throw new Error(r.msg)}wpCloseM();toast('Tersimpan.');wpLoad()}catch(e){toast(e.message||'Gagal',0);b.disabled=false}};
+window.wpPrint=async no=>{const w=window.open('','_blank');if(!w)return toast('Popup diblokir. Izinkan popup lalu coba lagi.',0);w.document.write('<p style="font-family:sans-serif">Menyiapkan dokumen…</p>');
+ try{const r=await post({action:'wpGet',...auth(),nomor:no});if(!r.ok)throw new Error(r.msg);w.document.open();w.document.write(printHTML(r.data));w.document.close()}catch(e){w.close();toast(e.message||'Gagal',0)}};
+const LG1=new URL('PTKP0.png',location.href).href,LG2=new URL('LOGO-K3-TRANSPARANT.png',location.href).href;
+const vs=c=>{const v=Object.values(c||{});return v.length?'Y '+v.filter(x=>x==='Y').length+' / T '+v.filter(x=>x==='T').length:'belum'};
+
+/* ---------- Tolak, perbaiki, rekap & dokumentasi ---------- */
+window.wpRejUi=no=>{$('wpMB').innerHTML=`<div class="flex justify-between items-center border-b pb-2"><h3 class="text-sm font-bold">⛔ Tolak Work Permit — ${no}</h3><button onclick="wpCloseM()" class="text-slate-500 font-bold text-base px-2">✕</button></div><p class="text-slate-500">Permit akan dikembalikan ke Pelaksana Pekerjaan untuk diperbaiki. Persetujuan & checklist sebelumnya direset.</p><textarea id="rjAlasan" rows="4" placeholder="Alasan menolak / bagian yang perlu diperbaiki *" class="w-full border rounded-xl p-2"></textarea><div class="flex gap-2"><button id="rjBtn" onclick="wpReject('${no}')" class="flex-1 bg-red-600 text-white font-bold py-2.5 rounded-xl">Tolak Permit</button><button onclick="wpCloseM()" class="bg-slate-200 font-bold px-5 rounded-xl">Batal</button></div>`;$('wpModal').classList.remove('hidden')};
+window.wpReject=async no=>{const a=val('rjAlasan');if(a.length<5)return toast('Alasan menolak wajib diisi.',0);$('rjBtn').disabled=true;try{const r=await post({action:'wpReject',...auth(),nomor:no,alasan:a});if(!r.ok)throw new Error(r.msg);wpCloseM();toast('Permit ditolak & dikembalikan.');wpLoad()}catch(e){toast(e.message||'Gagal',0);$('rjBtn').disabled=false}};
+window.wpFix=async no=>{try{const r=await post({action:'wpGet',...auth(),nomor:no});if(!r.ok)throw new Error(r.msg);buildForm();fillForm(r.data);wpRev=no;wpTab(0);toast('Perbaiki sesuai alasan penolakan, lalu tanda tangan ulang dan kirim.',1)}catch(e){toast(e.message||'Gagal',0)}};
+function fillForm(d){const S=(i,v)=>{if($(i))$(i).value=v||''};
+ [['wpTgl','tanggal'],['wpMitra','mitra'],['wpPj','pj'],['wpArea','areaReg'],['wpAreaNm','areaNama'],['wpAlamat','alamat'],['wpTelp','telp'],['wpDesk','desk'],['wpLok','lokasi'],['wpTm','tm'],['wpJm','jm'],['wpTs','ts'],['wpJs','js'],['wpJLain','jenisLain'],['wpALain','apdLain'],['wpKLain','kesLain'],['wpI21','item21']].forEach(a=>S(a[0],d[a[1]]));
+ S('wpGmt',(d.gas||{}).mt);S('wpGgb',(d.gas||{}).gb);S('wpGox',(d.gas||{}).ox);S('jsPel',d.jsa.pelaksana);S('jsKerja',d.jsa.kerja);S('jsUnit',d.jsa.unit);
+ [['wpJ','jenis'],['wpA','apd'],['wpK','kes']].forEach(a=>Q('.'+a[0]).forEach(c=>c.checked=(d[a[1]]||[]).includes(+c.value)));
+ Object.entries(d.cek||{}).forEach(([k,v])=>{const r=document.querySelector(`input[name=ck${k}][value=${v}]`);if(r)r.checked=true});
+ while($('jsRows').children.length<d.jsa.rows.length)jsAdd();[...$('jsRows').children].forEach((row,i)=>[...Q('.js',row)].forEach((t,c)=>t.value=(d.jsa.rows[i]||[])[c]||''));
+ $('wpSend').textContent='Kirim Perbaikan'}
+const shr=f=>new Promise(r=>{const i=new Image();i.onload=()=>{const k=Math.min(1,1000/Math.max(i.width,i.height)),c=document.createElement('canvas');c.width=i.width*k;c.height=i.height*k;c.getContext('2d').drawImage(i,0,0,c.width,c.height);r(c.toDataURL('image/jpeg',.72))};i.src=URL.createObjectURL(f)});
+let RK=[],RKT='';
+async function wpRekapLoad(){const t=new Date(),z=n=>('0'+n).slice(-2),f0=$('rkF')?$('rkF').value:`${t.getFullYear()}-01-01`,t0=$('rkT')?$('rkT').value:`${t.getFullYear()}-12-31`;
+ try{const r=await post({action:'wpRekap',adminPass:appCredentials.admin.pass,from:f0,to:t0});if(!r.ok)throw new Error(r.msg);RK=r.list;
+ $('wpRekap').innerHTML=`<div class="${card} text-xs"><div class="flex flex-wrap items-end gap-2"><h2 class="text-sm font-bold mr-auto">📊 Rekap Laporan Work Permit & JSA</h2><div><label class="block font-semibold mb-1">Dari</label><input type="date" id="rkF" value="${f0}" class="border rounded-lg px-2 py-1"></div><div><label class="block font-semibold mb-1">Sampai</label><input type="date" id="rkT" value="${t0}" class="border rounded-lg px-2 py-1"></div><button onclick="wpRekapLoad()" class="px-3 py-2 rounded-lg bg-slate-800 text-white font-bold">Tampilkan</button><button onclick="wpRekapPrint()" class="px-3 py-2 rounded-lg bg-red-600 text-white font-bold">🖨️ Cetak</button><button onclick="wpRekapCsv()" class="px-3 py-2 rounded-lg bg-emerald-600 text-white font-bold">⬇ CSV</button></div>
+ <p class="text-slate-500">Data permit & JSA masuk otomatis. Kolom dokumentasi diunggah manual oleh admin (maks. 10 foto per permit).</p><input type="file" id="wpUpIn" accept="image/*" multiple class="hidden" onchange="wpUpGo(this)">
+ <div class="table-container"><table class="w-full min-w-[980px]"><thead class="bg-slate-100"><tr><th class="px-2 py-2">No</th><th class="text-left">Nomor</th><th class="text-left">Tanggal</th><th class="text-left">Mitra / Pelaksana</th><th class="text-left">Jenis & Lokasi</th><th class="text-left">Periode Kerja</th><th class="text-left">Pemilik Area</th><th>JSA</th><th>Status</th><th>Dokumentasi</th></tr></thead><tbody>${RK.map((x,i)=>`<tr class="border-t align-top"><td class="px-2 py-2 text-center">${i+1}</td><td class="font-bold">${E(x.nomor)}</td><td>${E(x.tanggal)}</td><td>${E(x.mitra)}<div class="text-[10px] text-slate-400">${E(x.pelaksana)}</div></td><td>${E(x.jenis)}<div class="text-[10px] text-slate-400">${E(x.lokasi)}</div></td><td>${E(x.tm)} s.d. ${E(x.ts)}</td><td>${E(x.area)}</td><td class="text-center">${x.jsaTahap} tahap</td><td class="text-center"><span class="px-2 py-0.5 rounded-full font-bold ${BD[x.status]||''}">${x.status}</span></td><td class="whitespace-nowrap text-center">📎 ${x.dok} foto<br><button onclick="wpUp('${x.nomor}')" class="font-bold text-blue-700">⬆ Upload</button> <button onclick="wpDocView('${x.nomor}')" class="font-bold text-slate-700">🖼 Lihat</button></td></tr>`).join('')||'<tr><td colspan="10" class="text-center py-6 text-slate-400">Belum ada data pada periode ini.</td></tr>'}</tbody></table></div></div>`}catch(e){$('wpRekap').innerHTML=`<div class="${card} text-xs">${E(e.message||'Gagal memuat rekap')}</div>`}}
+window.wpRekapLoad=wpRekapLoad;
+window.wpUp=no=>{RKT=no;$('wpUpIn').click()};
+window.wpUpGo=async inp=>{const fs=[...inp.files];inp.value='';let ok=0;for(const f of fs){try{const r=await post({action:'wpDoc',adminPass:appCredentials.admin.pass,nomor:RKT,foto:await shr(f)});if(!r.ok)throw new Error(r.msg);ok++}catch(e){toast(e.message||'Gagal',0);break}}if(ok)toast(ok+' foto dokumentasi tersimpan.');wpRekapLoad()};
+window.wpDocView=async no=>{$('wpMB').innerHTML=HEAD('Dokumentasi '+no)+'<p>Memuat…</p>';$('wpModal').classList.remove('hidden');try{const r=await post({action:'wpDocGet',adminPass:appCredentials.admin.pass,nomor:no});if(!r.ok)throw new Error(r.msg);$('wpMB').innerHTML=HEAD('Dokumentasi '+no)+(r.fotos.map((s,i)=>`<div class="text-center"><img src="${s}" class="mx-auto max-h-64 rounded-lg border"><a href="${s}" download="${no.replace(/\//g,'-')}_dok${i+1}.jpg" class="inline-block mt-1 font-bold text-emerald-700">⬇ Download</a></div>`).join('')||'<p class="text-slate-400 text-center">Belum ada dokumentasi.</p>')}catch(e){wpCloseM();toast(e.message||'Gagal',0)}};
+window.wpRekapCsv=()=>{const c=s=>'"'+String(s??'').replace(/"/g,'""')+'"',L=[['No','Nomor','Tanggal','Mitra','Pelaksana','Jenis','Lokasi','Mulai','Selesai','Pemilik Area','Tahap JSA','Status','Alasan Ditolak','Jumlah Foto']].concat(RK.map((x,i)=>[i+1,x.nomor,x.tanggal,x.mitra,x.pelaksana,x.jenis,x.lokasi,x.tm,x.ts,x.area,x.jsaTahap,x.status,x.alasanTolak,x.dok]));const a=document.createElement('a');a.href=URL.createObjectURL(new Blob(['\ufeff'+L.map(r=>r.map(c).join(',')).join('\n')],{type:'text/csv'}));a.download='Rekap-WorkPermit-JSA.csv';a.click()};
+window.wpRekapPrint=()=>{const w=window.open('','_blank');if(!w)return toast('Popup diblokir.',0);w.document.write(`<!DOCTYPE html><html><head><meta charset="utf-8"><title>Rekap Work Permit & JSA</title><style>body{font-family:Arial;font-size:10px;padding:12px}table{border-collapse:collapse;width:100%}td,th{border:1px solid #000;padding:3px 4px;vertical-align:top}th{background:#ddd}button{padding:8px 16px;background:#b91c1c;color:#fff;border:0;border-radius:6px;font-weight:bold}@media print{.np{display:none}@page{size:A4 landscape;margin:8mm}}</style></head><body><div class="np"><button onclick="print()">🖨️ Cetak</button></div><h3>REKAP LAPORAN WORK PERMIT & JSA — PT Kertas Padalarang</h3><p>Periode: ${E($('rkF').value)} s.d. ${E($('rkT').value)}</p><table><tr><th>No</th><th>Nomor</th><th>Tanggal</th><th>Mitra / Pelaksana</th><th>Jenis</th><th>Lokasi</th><th>Periode Kerja</th><th>Pemilik Area</th><th>JSA</th><th>Status</th><th>Dok.</th></tr>${RK.map((x,i)=>`<tr><td>${i+1}</td><td>${E(x.nomor)}</td><td>${E(x.tanggal)}</td><td>${E(x.mitra)}<br>${E(x.pelaksana)}</td><td>${E(x.jenis)}</td><td>${E(x.lokasi)}</td><td>${E(x.tm)} - ${E(x.ts)}</td><td>${E(x.area)}</td><td>${x.jsaTahap} tahap</td><td>${x.status}${x.alasanTolak?'<br>('+E(x.alasanTolak)+')':''}</td><td>${x.dok} foto</td></tr>`).join('')}</table></body></html>`);w.document.close()};
+
+/* ---------- Admin menentukan Pemilik Area + notifikasi ---------- */
+const waNum=s=>{let d=String(s).replace(/\D/g,'');if(d.startsWith('0'))d='62'+d.slice(1);else if(d.startsWith('8'))d='62'+d;return d};
+const waMsg=(d,no)=>{const jn=(d.jenis||[]).map(i=>i===6?'Lainnya: '+(d.jenisLain||''):JENIS[i]).join(', '),url=location.href.split('#')[0].split('?')[0];
+ return `*NOTIFIKASI WORK PERMIT & JSA*\n\nYth. Bapak/Ibu Pemilik Area,\n\nMohon verifikasi dan persetujuan Work Permit & JSA berikut:\n\nNomor      : ${no}\nMitra      : ${d.mitra}\nPekerjaan  : ${jn}\nLokasi     : ${d.lokasi}\nPeriode    : ${dt(d.tm)||'-'} s.d. ${dt(d.ts)||'-'}\n\nLangkah:\n1. Buka aplikasi: ${url}\n2. Login sebagai karyawan, lalu klik tombol 🔔 Work Permit\n3. Buka JSA, isi checklist, kemudian tanda tangan.\n\nTerima kasih.\nSeksi K3LH - PT Kertas Padalarang`};
+window.wpAsgUi=async(no,cur)=>{$('wpMB').innerHTML=HEAD('Pemilik Area — '+no)+'<p>Memuat…</p>';$('wpModal').classList.remove('hidden');
+ let d;try{const r=await post({action:'wpGet',...auth(),nomor:no});if(!r.ok)throw new Error(r.msg);d=r.data}catch(e){wpCloseM();return toast(e.message||'Gagal',0)}
+ $('wpMB').innerHTML=HEAD('Pemilik Area — '+no)+`<p class="text-slate-500">Ketik nomor register Pemilik Area. Notifikasi di aplikasi hanya muncul pada nomor tersebut, dan permit ini masuk ke daftarnya.</p><input id="asReg" value="${cur}" placeholder="Nomor register (mis. 1823 / p175)" class="w-full border rounded-xl px-3 py-2"><input id="asWa" placeholder="Nomor WhatsApp (mis. 0812-3456-7890) — ketik manual" class="w-full border rounded-xl px-3 py-2"><label class="font-semibold text-slate-600">Isi pesan WhatsApp (boleh diedit)</label><textarea id="asMsg" rows="11" class="w-full border rounded-xl p-2 text-[11px]">${E(waMsg(d,no))}</textarea><button id="asWaBtn" onclick="wpAssign('${no}',1)" class="w-full bg-emerald-600 text-white font-bold py-2.5 rounded-xl">📲 Kirim Notifikasi (Aplikasi + WhatsApp)</button><p class="text-[11px] text-slate-500">Nomor WhatsApp boleh dikosongkan — notifikasi di aplikasi tetap terkirim.</p>`};
+window.wpAssign=async(no,wa)=>{if(!regOk(val('asReg')))return toast('Nomor register tidak valid.',0);const n=waNum(val('asWa'));if(val('asWa')&&n.length<10)return toast('Nomor WhatsApp tidak valid.',0);const doWa=n.length>=10;
+ const w=doWa?window.open('','_blank'):null;$('asWaBtn').disabled=true;const msg=val('asMsg');
+ try{const r=await post({action:'wpAssign',adminPass:appCredentials.admin.pass,nomor:no,reg:val('asReg')});if(!r.ok)throw new Error(r.msg);
+  if(w)w.location.href='https://wa.me/'+n+'?text='+encodeURIComponent(msg);
+  wpCloseM();toast('Notifikasi terkirim ke register '+val('asReg').toLowerCase()+(doWa?'. WhatsApp dibuka, tekan kirim.':'.'));wpLoad()}
+ catch(e){if(w)w.close();toast(e.message||'Gagal',0);$('asWaBtn').disabled=false}};
+document.body.insertAdjacentHTML('beforeend','<button id="wpBell" onclick="wpBellGo()" class="hidden fixed bottom-20 right-4 z-40 bg-red-600 text-white font-bold rounded-full shadow-xl px-4 py-3 text-xs no-print">🔔 <span id="wpBellN"></span> Work Permit</button>');
+window.wpBellGo=async()=>{try{await post({action:'wpNotifRead',...auth()})}catch(e){}$('wpBell').classList.add('hidden');switchModule('wp');wpTab(1)};
+setInterval(async()=>{const b=$('wpBell');if(!currentUser||isAdm()||currentUser.kind!=='karyawan'||!localStorage.getItem('wpTok')||document.hidden){if(b)b.classList.add('hidden');return}
+ try{const r=await post({action:'wpNotif',...auth()});if(!r.ok||!r.list.length){b.classList.add('hidden');return}$('wpBellN').textContent=r.list.length;b.classList.remove('hidden');const seen=+localStorage.getItem('wpNotifSeen')||0,mx=Math.max(...r.list.map(n=>n.id));if(mx>seen){const n=r.list.find(n=>n.id===mx);toast('🔔 '+n.nomor+': '+n.pesan);localStorage.setItem('wpNotifSeen',mx)}}catch(e){}},15000);
+
+/* ---------- Perpanjang / ubah izin kerja ---------- */
+window.wpExtUi=no=>{$('wpMB').innerHTML=HEAD('Perubahan Izin Kerja — '+no)+`<label class="flex gap-2"><input type="checkbox" id="exP" onchange="$x()"> Perpanjang pelaksanaan pekerjaan</label><label class="flex gap-2"><input type="checkbox" id="exU"> Perubahan pekerjaan <span class="text-slate-400">(permit ini ditutup, lalu buat Work Permit & JSA baru)</span></label><div id="exT" class="hidden grid grid-cols-2 gap-2">${inp('exTs','Tgl selesai baru','date')}${inp('exJs','Jam selesai baru','time')}</div><textarea id="exA" rows="3" placeholder="Alasan * (wajib)" class="w-full border rounded-xl p-2"></textarea><div class="flex gap-2"><button id="exB" onclick="wpExtend('${no}')" class="flex-1 bg-orange-600 text-white font-bold py-2.5 rounded-xl">Ajukan</button><button onclick="wpCloseM()" class="bg-slate-200 font-bold px-5 rounded-xl">Batal</button></div>`;window.$x=()=>$('exT').classList.toggle('hidden',!$('exP').checked);$('wpModal').classList.remove('hidden')};
+window.wpExtend=async no=>{const P=$('exP').checked,U=$('exU').checked;if(!P&&!U)return toast('Pilih salah satu.',0);if(val('exA').length<5)return toast('Alasan wajib diisi.',0);if(P&&!U&&!val('exTs'))return toast('Isi tanggal selesai baru.',0);$('exB').disabled=true;
+ try{const r=await post({action:'wpExtend',...auth(),nomor:no,perpanjang:P,perubahan:U,alasan:val('exA'),tsBaru:val('exTs'),jsBaru:val('exJs')});if(!r.ok)throw new Error(r.msg);wpCloseM();
+  if(r.perubahan){const g=await post({action:'wpGet',...auth(),nomor:no});buildForm();if(g.ok)fillForm(g.data);wpRev='';wpTab(0);toast('Permit lama ditutup. Silakan buat Work Permit & JSA baru, lalu tanda tangan.')}else{toast('Pengajuan perpanjangan terkirim ke Pemilik Area dan Unit K3.');wpLoad()}}catch(e){toast(e.message||'Gagal',0);$('exB').disabled=false}};
+window.wpExtReject=async no=>{if(val('rxA').length<5)return toast('Alasan menolak wajib diisi.',0);$('rxB').disabled=true;try{const r=await post({action:'wpExtReject',...auth(),nomor:no,alasan:val('rxA')});if(!r.ok)throw new Error(r.msg);wpCloseM();toast('Perpanjangan ditolak, pelaksana diberi tahu.');wpLoad()}catch(e){toast(e.message||'Gagal',0);$('rxB').disabled=false}};
+/* ---------- Ikon notifikasi admin ---------- */
+let NB=[];
+const nbRender=()=>{const u=NB.filter(n=>!n.dibaca).length;Q('.nb-n').forEach(e=>{e.textContent=u>99?'99+':u;e.classList.toggle('hidden',!u)})};
+function nbList(){$('nbPanel').innerHTML=`<div class="flex justify-between items-center border-b pb-2 mb-1"><b>🔔 Notifikasi</b><button onclick="nbClose()" class="text-slate-400">✕</button></div>`+(NB.map(n=>`<div onclick="nbGo('${E(n.ref)}')" class="cursor-pointer border-b py-2 px-1 hover:bg-red-50 ${n.dibaca?'text-slate-400':'font-semibold'}"><div>${E(n.pesan)}</div><div class="text-[10px] text-slate-400">${fmtT(n.waktu)}</div></div>`).join('')||'<p class="text-slate-400 py-4 text-center">Belum ada notifikasi.</p>')}
+async function nbPoll(){const adm=currentUser&&isAdm();Q('.nb-btn').forEach(b=>b.classList.toggle('hidden',!adm));if(!adm||document.hidden)return;try{const r=await post({action:'wpAdminNotif',adminPass:appCredentials.admin.pass});if(r.ok){NB=r.list;nbRender();const p=$('nbPanel');if(p&&!p.classList.contains('hidden'))nbList()}}catch(e){}}
+setInterval(nbPoll,5000);setTimeout(nbPoll,1200);
+window.nbToggle=async()=>{let p=$('nbPanel');if(!p){p=document.createElement('div');p.id='nbPanel';p.className='hidden fixed top-16 right-3 z-[70] w-[340px] max-w-[92vw] max-h-[70vh] overflow-y-auto bg-white rounded-2xl shadow-2xl border p-3 text-xs no-print';document.body.appendChild(p)}
+ if(!p.classList.toggle('hidden')){nbList();try{await post({action:'wpAdminNotifRead',adminPass:appCredentials.admin.pass});NB.forEach(n=>n.dibaca=true);nbRender()}catch(e){}}};
+window.nbClose=()=>{const p=$('nbPanel');if(p)p.classList.add('hidden')};
+window.nbGo=ref=>{nbClose();if(/^WP-/.test(ref)){switchModule('wp');wpTab(1)}else if(ref==='APD')switchModule('apd');else if(ref==='APAR')switchModule('apar');else if(ref==='TEMUAN')switchModule('temuan')};
+const cb=x=>x?'☑':'☐',dt=s=>s?new Date(s).toLocaleDateString('id-ID',{day:'numeric',month:'long',year:'numeric'}):'';
+function printHTML(d){const S=k=>(d.sig||{})[k]?`<img src="${d.sig[k]}" style="height:42px">`:'',N=k=>E((d.nama||{})[k]||''),jn=(l,a,o,lain)=>l.map((t,i)=>`<div>${cb(a.includes(i))} ${t==='Lainnya'?'Lainnya: '+E(lain||''):t}</div>`).join('');
+ const it=(i)=>`<td style="text-align:center">${i}</td><td>${E(i===21?d.item21:ITEM[i-1])}</td><td style="text-align:center">${(d.cek||{})[i]==='Y'?'✓':''}</td><td style="text-align:center">${(d.cek||{})[i]==='T'?'✓':''}</td>`;
+ const jr=d.jsa.rows,jN=Math.max(12,jr.length),jt=[...Array(jN)].map((_,i)=>`<tr style="height:44px"><td style="text-align:center">${i+1}</td>${[0,1,2,3,4].map(c=>`<td>${E((jr[i]||[])[c]||'')}</td>`).join('')}</tr>`).join('');
+ return `<!DOCTYPE html><html><head><meta charset="utf-8"><title>${E(d.nomor)}</title><style>body{font-family:Arial,sans-serif;font-size:10px;margin:0;padding:10px}table{border-collapse:collapse;width:100%}td,th{border:1px solid #000;padding:2px 4px;vertical-align:top}th{background:#d9d9d9}.g{background:#bfbfbf;font-weight:bold;text-align:center}.pg{page-break-after:always}.np{margin-bottom:8px}button{padding:8px 16px;background:#b91c1c;color:#fff;border:0;border-radius:6px;font-weight:bold}@media print{.np{display:none}@page{size:A4;margin:8mm}}</style></head><body><div class="np"><button onclick="print()">🖨️ Cetak</button></div>
+<div class="pg"><table><tr><td rowspan="3" style="width:18%"><img src="${LG1}" style="height:34px"> <img src="${LG2}" style="height:34px"></td><td rowspan="3" style="text-align:center;font-weight:bold;font-size:12px;vertical-align:middle">FORMULIR IZIN KERJA AMAN (<i>WORK PERMIT</i>)</td><td>No. Dokumen</td><td>: K3LH-FR-06</td></tr><tr><td>No. Revisi</td><td>: 01</td></tr><tr><td>Tanggal Revisi</td><td>: 8 Juni 2026</td></tr></table>
+<table><tr><td style="width:50%">Nomor : <b>${E(d.nomor)}</b></td><td>Tanggal : ${dt(d.tanggal)}</td></tr><tr><td class="g" style="text-align:left">MITRA KERJA (1)</td><td class="g" style="text-align:left">JENIS PEKERJAAN (2)</td></tr>
+<tr><td>Nama Pelaksana & Mitra Kerja : ${E(d.mitra)}<br>Alamat Mitra Kerja : ${E(d.alamat)}<br>No. Telepon : ${E(d.telp)}<br>Penanggung Jawab : ${E(d.pj)}</td><td>${jn(JENIS,d.jenis||[],0,d.jenisLain)}</td></tr>
+<tr><td style="height:90px">Deskripsi pekerjaan dan peralatan yang digunakan :<br>${E(d.desk)}</td><td>Lokasi Pekerjaan : ${E(d.lokasi)}<br><br>Tgl mulai : ${dt(d.tm)} &nbsp; Tgl selesai : ${dt(d.ts)}<br>Jam mulai : ${E(d.jm)} &nbsp; Jam selesai : ${E(d.js)}</td></tr>
+<tr><td class="g" style="text-align:left">ALAT PELINDUNG DIRI (3)</td><td class="g" style="text-align:left">PERLENGKAPAN KESELAMATAN (4)</td></tr><tr><td>${jn(APDL,d.apd||[],0,d.apdLain)}</td><td>${jn(KESL,d.kes||[],0,d.kesLain)}</td></tr></table>
+<table><tr><th>No.</th><th>ITEM (5)</th><th>Y</th><th>T</th><th>No.</th><th>ITEM</th><th>Y</th><th>T</th></tr>${[...Array(12)].map((_,i)=>`<tr>${it(i+1)}${i<9?it(i+13):'<td colspan="4"></td>'}</tr>`).join('')}</table>
+<table><tr><td>Ket</td><td>Mudah terbakar</td><td>Gas Beracun</td><td>Oksigen</td></tr><tr><td>Waktu & Hasil</td><td>${E(d.gas.mt)}</td><td>${E(d.gas.gb)}</td><td>${E(d.gas.ox)}</td></tr><tr><td>Tanda Tangan</td><td></td><td></td><td></td></tr></table>
+<div style="font-size:9px;margin:2px 0">Verifikasi checklist (item 1-20) — Pemilik Area: ${vs(d.cekPa)}; Pelaksana Unit K3: ${vs(d.cekU3)}</div><table><tr><td class="g" style="width:20%">Pemohon Izin Kerja</td><td class="g" colspan="2">Pemberi Izin Kerja</td><td class="g" colspan="2">Penyelesaian Pekerjaan</td></tr><tr style="height:62px;text-align:center"><td>${S('pp')}<br>( ${N('pp')} )<br>Pelaksana Pekerjaan</td><td>${S('pa')}<br>( ${N('pa')} )<br>Pemilik Area</td><td>${S('u3')}<br>( ${N('u3')} )<br>Pelaksana Unit K3</td><td style="width:16%">Pelaksana Pekerjaan</td><td style="width:14%">${S('selesai_pp')}</td></tr><tr style="text-align:center"><td colspan="3" class="g">Perubahan Izin Kerja</td><td>Pemilik Area</td><td>${S('selesai_pa')}</td></tr><tr style="text-align:center"><td colspan="3">${cb(d.ext&&d.ext.perpanjang)} Perpanjang pelaksanaan pekerjaan &nbsp; ${cb(d.ext&&d.ext.perubahan)} Perubahaan pekerjaan<br>Alasan : ${E(d.ext?d.ext.alasan:'')}${d.ext&&d.ext.tsBaru?' (s.d. '+dt(d.ext.tsBaru)+')':''}<br>Pemilik Area: ${S('ext_pa')} &nbsp; Pelaksana Unit K3: ${S('ext_u3')}</td><td>Pelaksana Unit K3</td><td>${S('selesai_u3')}</td></tr></table>
+<div style="text-align:center;font-size:9px;border:1px solid #000;border-top:0;padding:2px">Distribusi Kertas >> <b>Putih</b> : K3LH, <b>Merah</b> : Pelaksana/Mitra Kerja, <b>Kuning</b> : Pemilik Area, <b>Hijau</b> : Security</div></div>
+<table><tr><td style="width:18%"><img src="${LG1}" style="height:36px"></td><td style="text-align:center;font-weight:bold;font-size:13px;vertical-align:middle">FORMULIR JOB SAFETY ANALYSIS (JSA)</td><td style="width:12%;text-align:center"><img src="${LG2}" style="height:36px"></td></tr></table>
+<table style="border:0"><tr><td style="border:0">Nama Mitra Perusahaan : ${E(d.mitra)}<br>Nama Pelaksana Pekerjaan : ${E(d.jsa.pelaksana)}<br>Nama Pekerjaan : ${E(d.jsa.kerja)}</td><td style="border:0">Tanggal Pekerjaan : ${dt(d.tm||d.tanggal)}<br>Pemilik Area : ${N('jsa_pa')||N('jsa_seksi')}<br>Pelaksana Unit K3 : ${E(d.jsa.unit)||N('jsa_unit')}</td><td style="border:0">No. Dok: K3LH-FR-08<br>Rev : 00<br>Ref. Permit : ${E(d.nomor)}</td></tr></table>
+<table><tr><th style="width:5%">No.</th><th>Tahap Pekerjaan</th><th>Potensi Bahaya</th><th>Risiko</th><th>Upaya Pengendalian</th><th style="width:11%">Tanggung Jawab</th></tr>${jt}</table>
+<p>Catatan :<br>- Formulir JSA harus diisi dengan cermat dan terperinci<br>- Pastikan seluruh pekerja memahami JSA sebelum melakukan pekerjaan</p>
+<table style="width:55%;margin-left:45%"><tr><th>Pelaksana Pekerjaan</th><th>Pelaksana Unit K3</th><th>Pemilik Area</th></tr><tr style="height:58px;text-align:center"><td>${S('jsa_pp')}</td><td>${S('jsa_unit')}</td><td>${S('jsa_pa')||S('jsa_seksi')}</td></tr><tr style="text-align:center"><td>${N('jsa_pp')}</td><td>${N('jsa_unit')}</td><td>${N('jsa_pa')||N('jsa_seksi')}</td></tr></table></body></html>`}
+})();
+</script>
+<style>.vkpre label{opacity:.45}.vkpre input{accent-color:#9ca3af}</style>
+<style>@keyframes nbk{50%{opacity:.2}}.nb-n{animation:nbk 1s infinite}</style>
+<script>
+setInterval(()=>['publicMarkersLayer','statusMarkersLayer'].forEach(id=>{const l=document.getElementById(id);if(l&&l._sel&&document.activeElement!==l._sel&&l._sel.options.length-1!==qrList.length&&window['fill_'+id])window['fill_'+id]()}),700);
+document.addEventListener('dblclick',e=>{const r=e.target;if(r&&r.type==='radio'&&/^(ck|vk)\d+$/.test(r.name)){r.checked=false;const w=r.closest('.vkr');if(w)w.classList.remove('vkpre');if(window.vkChk&&/^vk/.test(r.name))vkChk()}});
+</script>
+<style>
+/* ===== Tampilan mobile otomatis ===== */
+html,body{max-width:100%;overflow-x:hidden}
+img{max-width:100%;height:auto}
+.table-container{overflow-x:auto;-webkit-overflow-scrolling:touch;max-width:100%}
+.pub-slide{min-width:0;max-width:100%;overflow:hidden}
+#pubViewport{max-width:100%}
+@media (max-width:768px){
+ input,select,textarea{font-size:16px!important}
+ .pub-arrow{width:32px;height:32px;font-size:16px}
+ .fl-btn{width:34px;height:34px}.fl-sel{max-width:150px;font-size:11px!important}
+ .fl-chip{font-size:9px;max-width:55vw;white-space:normal}
+ #nbPanel{top:56px!important;right:8px!important;width:calc(100vw - 16px)!important}
+ #wpMB,#pjModalBody{max-height:90vh}
+ #wpBell{bottom:12px!important;right:8px!important}
+ main,.max-w-7xl{padding-left:10px!important;padding-right:10px!important}
+}
+</style>
 </body>
 </html>
