@@ -3768,7 +3768,7 @@ html.mob select.fl-sel{font-size:12px!important;max-width:170px;padding:6px 8px}
 <script>
 (function(){const L=['publicMarkersLayer','statusMarkersLayer','adminMarkersLayer'],ZM={},isMob=()=>Math.min(innerWidth,screen.width)<=768,G=id=>document.getElementById(id);
  function setZoom(lid,z){const l=G(lid);if(!l)return;const cv=l.parentElement,w=cv.parentElement;z=Math.max(1,Math.min(6,z));ZM[lid]=z;
-  cv.style.width=z>1?(z*100)+'%':'';cv.style.maxWidth=z>1?'none':'';w.style.justifyContent=z>1?'flex-start':'';w.style.alignItems=z>1?'flex-start':'';
+  cv.style.width=z>1?(z*100)+'%':'';cv.style.maxWidth=z>1?'none':'';cv.style.flexShrink=z>1?'0':'';cv.style.flexGrow='0';w.style.justifyContent=z>1?'flex-start':'';w.style.alignItems=z>1?'flex-start':'';
   cv.style.setProperty('--md',isMob()?'7px':'8px')}
  window.mapZoom=(lid,d)=>setZoom(lid,d===0?1:(ZM[lid]||1)+d);window.__sz=setZoom;window.__zm=ZM;
  L.forEach(lid=>{const l=G(lid);if(!l)return;const bar=l.parentElement.querySelector('.fl-bar');if(!bar)return;l._home=l.parentElement;
