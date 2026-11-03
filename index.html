@@ -3769,7 +3769,7 @@ html.mob select.fl-sel{font-size:12px!important;max-width:170px;padding:6px 8px}
 (function(){const L=['publicMarkersLayer','statusMarkersLayer','adminMarkersLayer'],ZM={},isMob=()=>Math.min(innerWidth,screen.width)<=768,G=id=>document.getElementById(id);
  function setZoom(lid,z){const l=G(lid);if(!l)return;const cv=l.parentElement,w=cv.parentElement;z=Math.max(1,Math.min(6,z));ZM[lid]=z;
   cv.style.width=z>1?(z*100)+'%':'';cv.style.maxWidth=z>1?'none':'';cv.style.flexShrink=z>1?'0':'';cv.style.flexGrow='0';w.style.justifyContent=z>1?'flex-start':'';w.style.alignItems=z>1?'flex-start':'';
-  cv.style.setProperty('--md',isMob()?'7px':'8px')}
+  const W=cv.getBoundingClientRect().width||cv.offsetWidth||0,D=Math.min(22,Math.max(isMob()?7:8,W*0.0058));cv.style.setProperty('--md',D.toFixed(1)+'px')}
  window.mapZoom=(lid,d)=>setZoom(lid,d===0?1:(ZM[lid]||1)+d);window.__sz=setZoom;window.__zm=ZM;
  L.forEach(lid=>{const l=G(lid);if(!l)return;const bar=l.parentElement.querySelector('.fl-bar');if(!bar)return;l._home=l.parentElement;
   const z=document.createElement('div');z.className='fl-pill';z.title='Zoom peta';
@@ -3784,25 +3784,33 @@ html.mob select.fl-sel{font-size:12px!important;max-width:170px;padding:6px 8px}
 </script>
 <style>
 .map-marker{width:var(--md,8px)!important;height:var(--md,8px)!important;min-width:0!important;min-height:0!important;padding:0!important;font-size:0!important;line-height:1!important;border:1px solid #fff!important;box-shadow:0 0 0 1px rgba(0,0,0,.28);transition:width .12s,height .12s,font-size .12s;display:flex;align-items:center;justify-content:center}
-.map-marker:hover{width:19px!important;height:19px!important;font-size:9px!important;z-index:70!important}
+.map-marker:hover{width:calc(var(--md,8px)*2.2)!important;height:calc(var(--md,8px)*2.2)!important;font-size:max(9px,calc(var(--md,8px)*.85))!important;z-index:70!important}
 .fl2{border-radius:9999px!important;outline:none!important;border:2px solid #2563eb!important;box-shadow:0 0 0 1px #fff!important}.fl2::after{display:none!important}
 .pj-row{flex-wrap:nowrap;max-width:100%}.pj-row select{min-width:0;flex:1 1 0}.pj-row .pj-qty{width:64px;flex:none}.pj-row button{flex:none}
 </style>
 <script>
 (function(){const L=['publicMarkersLayer','statusMarkersLayer','adminMarkersLayer'];
  function zoomAt(lid,f,cx,cy){const l=document.getElementById(lid);if(!l||!window.__sz)return;const cv=l.parentElement,w=cv.parentElement,z0=window.__zm[lid]||1,z1=Math.max(1,Math.min(6,z0*f));if(z1===z0)return;
-  const px=(w.scrollLeft+cx)/cv.offsetWidth,py=(w.scrollTop+cy)/cv.offsetHeight;window.__sz(lid,z1);w.scrollLeft=px*cv.offsetWidth-cx;w.scrollTop=py*cv.offsetHeight-cy}
+  const px=(w.scrollLeft+cx)/cv.offsetWidth,py=(w.scrollTop+cy)/cv.offsetHeight;window.__sz(lid,z1);w.style.cursor=z1>1?'grab':'';w.scrollLeft=px*cv.offsetWidth-cx;w.scrollTop=py*cv.offsetHeight-cy}
  L.forEach(lid=>{const l=document.getElementById(lid);if(!l)return;const w=l.parentElement.parentElement;w.style.touchAction='pan-x pan-y';
   w.addEventListener('wheel',e=>{if(!e.ctrlKey&&!e.metaKey)return;e.preventDefault();const r=w.getBoundingClientRect(),f=Math.abs(e.deltaY)>=40?(e.deltaY<0?1.2:1/1.2):Math.exp(-e.deltaY*0.012);zoomAt(lid,f,e.clientX-r.left,e.clientY-r.top)},{passive:false});
   let d0=0;const dist=t=>Math.hypot(t[0].clientX-t[1].clientX,t[0].clientY-t[1].clientY);
   w.addEventListener('touchstart',e=>{if(e.touches.length===2)d0=dist(e.touches)},{passive:true});
   w.addEventListener('touchmove',e=>{if(e.touches.length===2){if(!d0)d0=dist(e.touches);e.preventDefault();const d=dist(e.touches),r=w.getBoundingClientRect();zoomAt(lid,d/d0,(e.touches[0].clientX+e.touches[1].clientX)/2-r.left,(e.touches[0].clientY+e.touches[1].clientY)/2-r.top);d0=d}},{passive:false});
-  w.addEventListener('touchend',()=>{d0=0},{passive:true})})})();
+  w.addEventListener('touchend',()=>{d0=0},{passive:true});
+  w.classList.add('map-wrap');w.style.scrollbarWidth='none';w.style.msOverflowStyle='none';
+  let pan=null,moved=false;
+  w.addEventListener('mousedown',e=>{if(e.button!==0||(window.__zm[lid]||1)<=1||e.target.closest('.map-marker')||e.target.closest('.fl-bar'))return;pan={x:e.clientX,y:e.clientY,sl:w.scrollLeft,st:w.scrollTop};moved=false;w.style.cursor='grabbing';e.preventDefault()});
+  addEventListener('mousemove',e=>{if(!pan)return;const dx=e.clientX-pan.x,dy=e.clientY-pan.y;if(Math.abs(dx)+Math.abs(dy)>3)moved=true;w.scrollLeft=pan.sl-dx;w.scrollTop=pan.st-dy});
+  addEventListener('mouseup',()=>{if(pan){pan=null;w.style.cursor=(window.__zm[lid]||1)>1?'grab':''}});
+  w.addEventListener('click',e=>{if(moved){e.stopPropagation();e.preventDefault();moved=false}},true);
+})})();
 </script>
 <script>
 if(currentUser&&!localStorage.getItem('wpTok')){handleLogout()}
 </script>
 <style>.fl-pill[title="Zoom peta"]{display:none!important}</style>
 <script>document.querySelectorAll('.fl-pill[title="Zoom peta"]').forEach(e=>e.remove());</script>
+<style>.map-wrap::-webkit-scrollbar{display:none;width:0;height:0}.map-wrap{-ms-overflow-style:none;scrollbar-width:none}</style>
 </body>
 </html>
