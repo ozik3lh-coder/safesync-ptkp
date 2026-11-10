@@ -1493,6 +1493,7 @@
 <button onclick="switchModule('wp')" class="bg-red-800/80 hover:bg-red-700 text-white px-3 py-1.5 rounded-xl text-xs font-semibold shadow transition-all duration-200 whitespace-nowrap flex items-center gap-1">🧾 Work Permit &amp; JSA</button>
                     ${currentUser.kind==='vendor'?'':`<button onclick="switchModule('veh')" id="navVeh" class="bg-red-800/80 hover:bg-red-700 text-white px-3 py-1.5 rounded-xl text-xs font-semibold shadow transition-all duration-200 whitespace-nowrap flex items-center gap-1">🚗 Inspeksi Kendaraan</button>`}
                     <button onclick="sopOpen()" id="navSop" class="bg-red-800/80 hover:bg-red-700 text-white px-3 py-1.5 rounded-xl text-xs font-semibold shadow transition-all duration-200 whitespace-nowrap flex items-center gap-1">📚 SOP &amp; IK</button>
+                    ${currentUser.kind==='karyawan'?`<button onclick="passUi()" class="bg-red-800/80 hover:bg-red-700 text-white px-3 py-1.5 rounded-xl text-xs font-semibold shadow transition-all duration-200 whitespace-nowrap flex items-center gap-1">🔑 Ganti Password</button>`:''}
                     <button onclick="nbToggle()" class="nb-btn hidden relative bg-slate-800 hover:bg-slate-700 text-white px-2.5 py-1.5 rounded-xl text-xs shadow" title="Notifikasi">🔔<span class="nb-n hidden absolute -top-1.5 -right-1.5 bg-red-600 text-white text-[10px] font-bold rounded-full min-w-[18px] h-[18px] flex items-center justify-center"></span></button>
                     <button onclick="handleLogout()" class="bg-red-950 hover:bg-black text-white px-3 py-1.5 rounded-xl text-xs font-semibold shadow transition-all duration-200 whitespace-nowrap flex items-center gap-1"><span>⬅️</span> Keluar</button>
                 `;
@@ -1535,6 +1536,7 @@
                 closeLoginModal();
                 checkAuthSession();
                 alert("Login Berhasil!");
+                if (r.defPass) setTimeout(() => alert("Keamanan akun: Anda masih memakai password awal (nomor register). Silakan ganti melalui menu \"Ganti Password\"."), 300);
             } catch (e) { alert('Tidak dapat terhubung ke server. Periksa koneksi internet.'); }
             finally { if (btn) btn.disabled = false; }
         }
@@ -3749,7 +3751,7 @@ const waNum=s=>{let d=String(s).replace(/\D/g,'');if(d.startsWith('0'))d='62'+d.
 const waMsg=(d,no,reg)=>{const jn=(d.jenis||[]).map(i=>i===6?'Lainnya: '+(d.jenisLain||''):JENIS[i]).join(', '),url=location.href.split('#')[0].split('?')[0],rg=String(reg||'').trim().toLowerCase(),
  fase=d.ext&&d.ext.status==='MENUNGGU'?'ext':(d.sig&&d.sig.pa?'selesai':'awal'),
  info=`Nomor      : ${no}\nMitra      : ${d.mitra}\nPekerjaan  : ${jn}\nLokasi     : ${d.lokasi}\nPeriode    : ${dt(d.tm)||'-'} s.d. ${dt(d.ts)||'-'}`,
- nm=(window.__kar||{})[rg],akun=`*Akun login aplikasi:*\nUsername : ${nm?nm.toUpperCase():'(nama lengkap Anda)'}\nPassword : ${rg||'(nomor register Anda)'}\n(Username cukup diisi 1 kata atau lebih dari nama${nm?', mis. \"'+nm.split(' ')[0].toUpperCase()+'\"':''}, huruf besar/kecil bebas. Password adalah nomor register.)`,
+ nm=(window.__kar||{})[rg],akun=`*Akun login aplikasi:*\nUsername : ${nm?nm.toUpperCase():'(nama lengkap Anda)'}\nPassword awal : ${rg||'(nomor register Anda)'}\n(Username cukup diisi 1 kata atau lebih dari nama${nm?', mis. \"'+nm.split(' ')[0].toUpperCase()+'\"':''}, huruf besar/kecil bebas. Password awal adalah nomor register; bila sudah diganti sendiri gunakan password terbaru, bila lupa hubungi admin K3LH.)`,
  buka=`1. Buka aplikasi: ${url}\n2. Login dengan username & password di atas.\n3. Klik menu 🧾 Work Permit & JSA, lalu cari nomor ${no} pada daftar.`,
  tutup='\n\nTerima kasih.\nSeksi K3LH - PT Kertas Padalarang';
  if(fase==='selesai')return `*NOTIFIKASI WORK PERMIT & JSA*\n*(Penyelesaian Pekerjaan)*\n\nYth. Bapak/Ibu Pemilik Area,\n\nMohon tanda tangan PENYELESAIAN Work Permit & JSA berikut:\n\n${info}\n\n${akun}\n\n*Langkah tanda tangan penyelesaian:*\n${buka}\n4. Pastikan Pelaksana Pekerjaan sudah tanda tangan penyelesaian. Bila tombol masih "⏳ Menunggu Pelaksana Pekerjaan", mohon tunggu.\n5. Periksa bahwa pekerjaan sudah selesai dan area kerja aman & rapi.\n6. Klik tombol "✍️ Selesaikan", isi nama terang, tanda tangan, lalu simpan.\n\nCatatan: bila masa berlaku izin terlewati, tanda tangan penyelesaian diisi otomatis oleh sistem setelah tambahan waktu 1 jam per tahap (Pelaksana, lalu Pemilik Area, lalu Unit K3).${tutup}`;
@@ -3981,7 +3983,7 @@ window.switchModule=function(m){mount();const mv=$('modulVeh');
  if(m==='veh'){if(!currentUser||currentUser.kind==='vendor')return;MODS.forEach(i=>{const e=$(i);if(e)e.classList.add('hidden')});mv.classList.remove('hidden');inVeh=true;window.SOP_PREV='veh';
   Q('#navButtonsContainer button').forEach(b=>{if(b.id!=='navProfile'&&/switchModule\(|sopOpen\(/.test(b.getAttribute('onclick')||''))b.className=CIN});const nb=$('navVeh');if(nb)nb.className=CON;ENT=enter();return}
  inVeh=false;if(mv)mv.classList.add('hidden');const nb=$('navVeh');if(nb)nb.className=CIN;
- const r=SM.apply(this,arguments);if(m==='profile'&&isAdm()){setTimeout(vehProfile,120);setTimeout(admSess,160)}return r};
+ const r=SM.apply(this,arguments);if(m==='profile'&&isAdm()){setTimeout(vehProfile,120);setTimeout(admSess,160);setTimeout(()=>{if(window.karUi)window.karUi()},200)}return r};
 {const SO=window.sopOpen;if(SO)window.sopOpen=function(m){return SO.call(this,m||(window.SOP_PREV==='veh'?'veh':undefined))}}
 /* ---------- muat data ---------- */
 async function refresh(){const r=await call({action:'wpVehData'});U=r.units;I=r.insp}
@@ -4310,6 +4312,43 @@ function lapDoc(P){const h=R.h,nt=h.nota,pc=h.perusahaan,tt=h.ttd,roman=ROM[Numb
 .pl{width:281mm}.hdr,.inf,.rp{width:100%;border-collapse:collapse}.inf td{border:1.5px solid #000;padding:2px 5px;font-size:12px}.inf td.l{width:13%;font-weight:bold}.rp{margin-top:8px}.rp th{background:#d9d9d9;border:1.5px solid #000;padding:3px;font-size:10px}.rp td{border:1.5px solid #000;padding:3px 4px;vertical-align:top;font-size:10px}.rp tr,.rp td{break-inside:avoid;page-break-inside:avoid}.rp thead{display:table-header-group}.c{text-align:center}.ph .pi{margin-bottom:2px}.ph img{display:block;width:100%;object-fit:contain;border:1px solid #000}.ph.g2{display:grid;grid-template-columns:1fr 1fr;gap:2px}.ph.g2 .pi{margin:0}
 .sgw{display:flex;justify-content:center;margin-top:10px;break-inside:avoid}.sgt{width:auto;min-width:210px;margin:0 0 -1px 0}.sgt th{background:#d9d9d9;font-size:11px}.sgt td{text-align:center;font-size:10.5px;min-width:130px}.sgt tr.sp td{height:58px}.lc{font-weight:bold;margin:0 0 6px;font-size:13px}`;
  return `<!DOCTYPE html><html><head><meta charset="utf-8"><title>Laporan Bulanan K3 ${E(R.label)}</title><style>${css}</style></head><body><div class="np"><button onclick="print()">🖨️ Cetak</button> <span style="font-size:12px">Gunakan A4, skala 100%, aktifkan "Background graphics". Halaman cover & laporan landscape, nota dinas & disposisi portrait.</span></div>${body}</body></html>`}
+})();
+</script>
+<script>
+(()=>{
+const A=SCRIPT_URL,$=id=>document.getElementById(id);
+const E=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const isAdm=()=>currentUser&&currentUser.role==='admin';
+const toast=(m,ok=1)=>{const d=document.createElement('div');d.className='fixed bottom-5 left-1/2 -translate-x-1/2 z-[95] px-4 py-2.5 rounded-xl text-xs font-bold text-white shadow-lg max-w-[92vw] '+(ok?'bg-emerald-600':'bg-red-600');d.textContent=m;document.body.appendChild(d);setTimeout(()=>d.remove(),ok?2600:5000)};
+const post=async p=>{const r=await(await fetch(A,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify({...p,token:localStorage.getItem('wpTok')||''})})).json();if(r.ok===undefined)throw new Error('Server belum diperbarui. Tempel Code.gs terbaru lalu Deploy > New version.');if(!r.ok&&/Sesi/.test(r.msg||'')){setTimeout(()=>{alert('Sesi berakhir. Silakan login kembali.');handleLogout()},200)}return r};
+const call=async p=>{const r=await post(p);if(!r.ok)throw new Error(r.msg||'Gagal');return r};
+const CARD='bg-white rounded-2xl shadow-lg p-4 md:p-5 border border-slate-100 space-y-3',INP='w-full border rounded-lg px-2.5 py-1.5 bg-white',LB='block font-semibold text-slate-600 mb-1',BTN='px-3 py-1.5 rounded-lg font-bold';
+const dtT=s=>s?new Date(s).toLocaleString('id-ID',{timeZone:'Asia/Jakarta',day:'2-digit',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit',hour12:false}).replace(/\./g,':'):'-';
+function modal(h){if(!$('pModal'))document.body.insertAdjacentHTML('beforeend','<div id="pModal" class="hidden fixed inset-0 z-[85] flex items-center justify-center bg-black/60 px-2"><div id="pModalB" class="bg-white rounded-2xl shadow-2xl w-full max-w-sm max-h-[92vh] overflow-y-auto p-4 space-y-3 text-xs"></div></div>');$('pModalB').innerHTML=h;$('pModal').classList.remove('hidden')}
+window.passClose=()=>{const m=$('pModal');if(m)m.classList.add('hidden')};
+/* ---------- karyawan: ganti password sendiri ---------- */
+window.passUi=()=>{if(!currentUser||currentUser.kind!=='karyawan')return;
+ modal(`<b class="text-sm">🔑 Ganti Password</b><p class="text-slate-600">Akun: <b>${E(currentUser.name||'')}</b></p><p class="text-slate-500">Password awal adalah nomor register. Setelah diganti, password awal tidak berlaku lagi. Jika lupa password, hubungi admin K3LH untuk direset.</p>
+ <div><label class="${LB}">Password lama *</label><input id="pOld" type="password" autocomplete="current-password" class="${INP}"></div><div><label class="${LB}">Password baru * <span class="font-normal text-slate-400">(6–40 karakter)</span></label><input id="pNew" type="password" autocomplete="new-password" class="${INP}"></div><div><label class="${LB}">Ulangi password baru *</label><input id="pNew2" type="password" autocomplete="new-password" class="${INP}"></div>
+ <label class="flex items-center gap-2"><input type="checkbox" onchange="['pOld','pNew','pNew2'].forEach(i=>document.getElementById(i).type=this.checked?'text':'password')"> Tampilkan password</label>
+ <div class="flex gap-2"><button id="pBtn" onclick="passSave()" class="${BTN} bg-red-700 text-white">💾 Simpan Password</button><button onclick="passClose()" class="${BTN} bg-slate-100">Batal</button></div>`)};
+window.passSave=async()=>{const o=$('pOld').value.trim(),n=$('pNew').value.trim(),n2=$('pNew2').value.trim();
+ if(!o)return toast('Isi password lama.',0);if(n.length<6||n.length>40)return toast('Password baru 6–40 karakter.',0);if(n!==n2)return toast('Ulangi password baru dengan benar.',0);
+ const b=$('pBtn');b.disabled=true;try{await call({action:'wpPassChange',oldPass:o,newPass:n});passClose();toast('✅ Password berhasil diganti. Gunakan password baru saat login berikutnya.')}catch(e){toast(e.message,0);b.disabled=false}};
+/* ---------- admin: kelola akun karyawan (Profil) ---------- */
+let KL=[],KQ='',KALL=false;
+window.karUi=async()=>{const mp=$('modulProfile');if(!mp||!isAdm())return;if(!$('profKar'))mp.insertAdjacentHTML('afterbegin','<div id="profKar"></div>');
+ try{const r=await call({action:'wpKarAdmin'});KL=r.list;karRender()}catch(e){$('profKar').innerHTML=''}};
+function karRows(){const q=KQ.trim().toLowerCase(),L=KL.filter(k=>!q||k.nama.toLowerCase().includes(q)||k.reg.includes(q));return{L,show:KALL||q?L:L.slice(0,40)}}
+function karBody(){const {L,show}=karRows();return `<p class="text-slate-500 mb-1">${L.length} akun${L.length>show.length?' · menampilkan '+show.length+' pertama':''}</p><div class="overflow-x-auto"><table class="w-full text-left"><thead><tr class="bg-slate-50"><th class="p-1.5">Nama (username)</th><th class="p-1.5">Register</th><th class="p-1.5">Password</th><th class="p-1.5">Login terakhir</th><th class="p-1.5">Aksi</th></tr></thead><tbody>${show.map(k=>`<tr class="border-t align-top ${k.aktif?'':'opacity-50'}"><td class="p-1.5 font-bold">${E(k.nama)}${k.aktif?'':' <span class="text-[10px] font-normal text-red-600">(nonaktif)</span>'}</td><td class="p-1.5 uppercase">${E(k.reg)}</td><td class="p-1.5">${k.custom?`<span class="px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-700 font-bold">Pribadi</span><br><span class="text-[10px] text-slate-500">diubah ${dtT(k.diubah)}</span>`:'<span class="px-2 py-0.5 rounded-full bg-slate-100 text-slate-600 font-bold">Awal (nomor register)</span>'}</td><td class="p-1.5 whitespace-nowrap">${dtT(k.terakhir)}</td><td class="p-1.5"><div class="flex flex-wrap gap-1"><button onclick="karReset('${E(k.reg)}')" class="${BTN} bg-amber-100 text-amber-800">↺ Reset</button><button onclick="karSet('${E(k.reg)}')" class="${BTN} bg-blue-100 text-blue-800">🔑 Atur</button><button onclick="karActive('${E(k.reg)}',${!k.aktif})" class="${BTN} bg-slate-100">${k.aktif?'Nonaktifkan':'Aktifkan'}</button></div></td></tr>`).join('')||'<tr><td colspan="5" class="p-4 text-center text-slate-400">Tidak ada akun yang cocok.</td></tr>'}</tbody></table></div>${!KALL&&!KQ.trim()&&L.length>show.length?`<button onclick="karAll()" class="${BTN} bg-slate-100 mt-1">Tampilkan semua ${L.length} akun</button>`:''}`}
+function karRender(){$('profKar').innerHTML=`<div class="${CARD} text-xs"><h3 class="font-bold text-sm">👥 Akun Karyawan (${KL.length})</h3><p class="text-slate-500">Username = nama karyawan (1 kata atau lebih, kata utuh); password awal = nomor register, dan dapat diganti sendiri oleh karyawan. Password pribadi disimpan ter-hash sehingga <b>tidak dapat dilihat siapa pun</b>, tetapi bila karyawan lupa Anda dapat <b>Reset</b> (kembali ke nomor register) atau <b>Atur</b> password sementara.</p><input id="kSq" type="search" value="${E(KQ)}" oninput="karSearch(this.value)" placeholder="🔍 Cari nama atau nomor register…" class="${INP}"><div id="kBody">${karBody()}</div>
+ <details class="border rounded-xl p-2.5"><summary class="font-bold cursor-pointer">➕ Tambah karyawan baru</summary><div class="grid md:grid-cols-3 gap-2 mt-2"><div><label class="${LB}">Nomor register *</label><input id="kaReg" class="${INP}"></div><div class="md:col-span-2"><label class="${LB}">Nama lengkap *</label><input id="kaNama" class="${INP}"></div></div><button onclick="karAdd()" class="${BTN} bg-red-700 text-white mt-2">Tambah</button></details></div>`}
+window.karSearch=v=>{KQ=v;const b=$('kBody');if(b)b.innerHTML=karBody()};window.karAll=()=>{KALL=true;karRender()};
+const kn=reg=>(KL.find(x=>x.reg===reg)||{}).nama||reg;
+window.karReset=async reg=>{if(!confirm('Reset password '+kn(reg)+' ke password awal (nomor register '+reg.toUpperCase()+')?'))return;try{await call({action:'wpKarReset',reg});toast('✅ Password direset ke nomor register.');karUi()}catch(e){toast(e.message,0)}};
+window.karSet=async reg=>{const p=prompt('Password sementara untuk '+kn(reg)+' (6–40 karakter).\nSampaikan kepada yang bersangkutan dan minta segera menggantinya.');if(p===null)return;try{await call({action:'wpKarSetPass',reg,pass:p});toast('✅ Password sementara ditetapkan.');karUi()}catch(e){toast(e.message,0)}};
+window.karActive=async(reg,on)=>{if(!confirm((on?'Aktifkan':'Nonaktifkan')+' akun '+kn(reg)+'?'))return;try{await call({action:'wpKarActive',reg,aktif:on});karUi()}catch(e){toast(e.message,0)}};
+window.karAdd=async()=>{try{await call({action:'wpKarAdd',reg:$('kaReg').value,nama:$('kaNama').value});toast('✅ Karyawan ditambahkan (password awal = nomor register).');karUi()}catch(e){toast(e.message,0)}};
 })();
 </script>
 </body>
