@@ -68,7 +68,7 @@
                         <p class="text-[9px] md:text-[10px] text-red-200 font-medium">PT Kertas Padalarang</p>
                     </div>
                 </div>
-                <button onclick="openLoginModal()" class="bg-white text-red-700 hover:bg-red-50 font-bold px-3.5 py-2 rounded-xl text-xs shadow-md transition-all duration-200 transform hover:scale-105 flex items-center gap-1.5 whitespace-nowrap">
+                <button onclick="openLoginModal()" class="ml-auto order-last bg-white text-red-700 hover:bg-red-50 font-bold px-3.5 py-2 rounded-xl text-xs shadow-md transition-all duration-200 transform hover:scale-105 flex items-center gap-1.5 whitespace-nowrap">
                     <span>🔐</span> Masuk / Login
                 </button>
             </div>
@@ -110,10 +110,15 @@
  <div class="grid md:grid-cols-3 gap-4">
   <div class="md:col-span-2"><h3 class="text-xs font-bold text-slate-800 mb-2">📋 Live Record Peminjaman</h3><div class="table-container border rounded-xl"><table class="w-full text-xs min-w-[520px]"><thead class="bg-slate-100 text-slate-600"><tr><th class="px-2 py-2 text-left">Waktu</th><th class="px-2 py-2 text-left">Peminjam</th><th class="px-2 py-2 text-left">Dept/Seksi</th><th class="px-2 py-2 text-left">APD</th><th class="px-2 py-2 text-left">Status</th></tr></thead><tbody id="pubLoans"></tbody></table></div></div>
   <div><div class="flex justify-between items-center mb-2"><h3 class="text-xs font-bold text-slate-800">🏆 TOP 5 Peminjam APD</h3><div class="flex gap-1"><button data-top="topMonth" onclick="pubTop('topMonth')">Bulan ini</button><button data-top="topAll" onclick="pubTop('topAll')">Semua</button></div></div><ol id="pubTop" class="space-y-2.5"></ol></div>
- </div></div></div></div></div>
+ </div></div></div><div class="pub-slide w-full min-w-full shrink-0">
+<div class="bg-white rounded-2xl shadow-lg p-4 md:p-6 border border-slate-100 space-y-4">
+ <div class="border-b border-slate-100 pb-3"><h2 class="text-sm md:text-lg font-bold text-slate-900">🦺 Dashboard Safety Induction</h2><p class="text-[11px] text-slate-500">Tamu, karyawan baru, dan OS baru yang telah mengikuti safety induction. Masa berlaku 6 bulan sesuai SOP; setelah itu wajib induction ulang.</p></div>
+ <div id="pubSiStat" class="grid grid-cols-3 gap-3"></div>
+ <div class="table-container border rounded-xl"><table class="w-full text-xs min-w-[560px]"><thead class="bg-slate-100 text-slate-600"><tr><th class="px-2 py-2 text-left">No</th><th class="px-2 py-2 text-left">Nama Tamu / Perusahaan</th><th class="px-2 py-2 text-left">Kategori</th><th class="px-2 py-2 text-left">Tanggal &amp; Waktu Induction</th><th class="px-2 py-2 text-left">Berlaku s.d.</th><th class="px-2 py-2 text-center">Peserta Berlaku</th><th class="px-2 py-2 text-left">Status</th></tr></thead><tbody id="pubSi"><tr><td colspan="7" class="px-2 py-6 text-center text-slate-400">Memuat…</td></tr></tbody></table></div>
+</div></div></div></div>
  <button class="pub-arrow left-2" aria-label="Sebelumnya" id="pubPrev">&#10094;</button>
  <button class="pub-arrow right-2" aria-label="Berikutnya" id="pubNext">&#10095;</button>
- <div class="flex justify-center gap-2 mt-3"><button class="pub-dot on" onclick="pubGo(0)" aria-label="Dashboard APAR"></button><button class="pub-dot" onclick="pubGo(1)" aria-label="Dashboard Peminjaman APD"></button></div></div>
+ <div class="flex justify-center gap-2 mt-3"><button class="pub-dot on" onclick="pubGo(0)" aria-label="Dashboard APAR"></button><button class="pub-dot" onclick="pubGo(1)" aria-label="Dashboard Peminjaman APD"></button><button class="pub-dot" onclick="pubGo(2)" aria-label="Dashboard Safety Induction"></button></div></div>
 </main>
     </div>
 
@@ -160,6 +165,7 @@
                 </div>
 
                 <div class="flex items-center gap-1.5 shrink-0 bg-red-950/40 p-1.5 rounded-2xl border border-red-600/30 shadow-inner" id="navButtonsContainer"></div>
+                <div id="headerActions" class="hidden items-center gap-2 shrink-0"></div>
             </div>
         </header>
 
@@ -168,7 +174,7 @@
             <!-- MODUL 1: INSPEKSI APAR -->
             <div id="modulApar" class="space-y-4 relative">
 
-                <div class="fixed bottom-4 right-4 z-40 pointer-events-none no-print flex flex-col items-end">
+                <div class="mascot-wrap fixed bottom-4 right-4 z-40 pointer-events-none no-print flex flex-col items-end">
                     <div class="bg-white/90 backdrop-blur-md px-3 py-1 rounded-full shadow-lg text-[10px] font-bold text-red-700 mb-1 border border-red-200 animate-bounce flex items-center gap-1.5">
                         <span>🔥</span> Siaga APAR PTKP
                     </div>
@@ -1451,7 +1457,21 @@
             return `${String(d.getDate()).padStart(2, '0')}/${String(d.getMonth() + 1).padStart(2, '0')}/${d.getFullYear()} - ${String(d.getHours()).padStart(2, '0')}.${String(d.getMinutes()).padStart(2, '0')} WIB`;
         }
 
-        function setupNavigation() {
+        /* Desktop: tombol profil/notifikasi/keluar dipindah ke kanan atas header; mobile tetap seperti semula */
+        const NAV_MQ = window.matchMedia('(min-width:1024px)');
+        function layoutNav() {
+            const nav = document.getElementById('navButtonsContainer');
+            const act = document.getElementById('headerActions');
+            if (!nav || !act) return;
+            const isAct = b => b.id === 'navProfile' || b.classList.contains('nb-btn') || /handleLogout/.test(b.getAttribute('onclick') || '');
+            const items = [...nav.children, ...act.children].filter(isAct);
+            const target = NAV_MQ.matches ? act : nav;
+            items.forEach(b => target.appendChild(b));
+        }
+        NAV_MQ.addEventListener('change', layoutNav);
+
+        function setupNavigation() { const _ha = document.getElementById('headerActions'); if (_ha) _ha.innerHTML = ''; _setupNavigationCore(); layoutNav(); }
+        function _setupNavigationCore() {
             const navContainer = document.getElementById('navButtonsContainer');
             const subTitle = document.getElementById('headerRoleSubtitle');
             navContainer.innerHTML = "";
@@ -1465,6 +1485,7 @@
 <button onclick="switchModule('wp')" class="bg-red-800/80 hover:bg-red-700 text-white px-3 py-1.5 rounded-xl text-xs font-semibold shadow transition-all duration-200 whitespace-nowrap flex items-center gap-1">🧾 Work Permit &amp; JSA</button>
                     <button onclick="switchModule('veh')" id="navVeh" class="bg-red-800/80 hover:bg-red-700 text-white px-3 py-1.5 rounded-xl text-xs font-semibold shadow transition-all duration-200 whitespace-nowrap flex items-center gap-1">🚗 Inspeksi Kendaraan</button>
                     <button onclick="switchModule('lap')" id="navLap" class="bg-red-800/80 hover:bg-red-700 text-white px-3 py-1.5 rounded-xl text-xs font-semibold shadow transition-all duration-200 whitespace-nowrap flex items-center gap-1">📑 Laporan Bulanan</button>
+                    <button onclick="switchModule('si')" id="navSi" class="bg-red-800/80 hover:bg-red-700 text-white px-3 py-1.5 rounded-xl text-xs font-semibold shadow transition-all duration-200 whitespace-nowrap flex items-center gap-1">🦺 Safety Induction</button>
                     <button onclick="sopOpen()" id="navSop" class="bg-red-800/80 hover:bg-red-700 text-white px-3 py-1.5 rounded-xl text-xs font-semibold shadow transition-all duration-200 whitespace-nowrap flex items-center gap-1">📚 SOP &amp; IK</button>
                     <button onclick="switchModule('profile')" id="navProfile" class="bg-slate-800 hover:bg-slate-700 text-white px-2.5 py-1.5 rounded-xl text-xs font-semibold shadow transition-all duration-200 whitespace-nowrap" title="Pengaturan Akun & Akses">👤</button>
                     <button onclick="nbToggle()" class="nb-btn hidden relative bg-slate-800 hover:bg-slate-700 text-white px-2.5 py-1.5 rounded-xl text-xs shadow" title="Notifikasi">🔔<span class="nb-n hidden absolute -top-1.5 -right-1.5 bg-red-600 text-white text-[10px] font-bold rounded-full min-w-[18px] h-[18px] flex items-center justify-center"></span></button>
@@ -3560,8 +3581,8 @@ const val=id=>$(id).value.trim(),ckd=c=>[...Q('.'+c)].filter(x=>x.checked).map(x
 
 
 /* ---------- SOP & IK: diunggah admin, dibaca / diunduh semua akun ---------- */
-const SOPM=[['apar','🧯 APAR'],['temuan','⚠️ Temuan K3'],['apd_pinjam','⛑️ APD — Peminjaman'],['apd_minta','⛑️ APD — Permintaan'],['apd_serah','⛑️ APD — Serah Terima'],['apd_spb','⛑️ APD — SPB'],['apd_stok','⛑️ APD — Safety Stock'],['wp','🧾 Work Permit & JSA'],['veh','🚗 Inspeksi Kendaraan'],['lap','📑 Laporan Bulanan'],['umum','📌 Umum']];
-const SOPF=[['all','Semua'],['apar','APAR'],['temuan','Temuan'],['apd','APD'],['wp','Work Permit & JSA'],['veh','Kendaraan'],['lap','Laporan Bulanan'],['umum','Umum']];
+const SOPM=[['apar','🧯 APAR'],['temuan','⚠️ Temuan K3'],['apd_pinjam','⛑️ APD — Peminjaman'],['apd_minta','⛑️ APD — Permintaan'],['apd_serah','⛑️ APD — Serah Terima'],['apd_spb','⛑️ APD — SPB'],['apd_stok','⛑️ APD — Safety Stock'],['wp','🧾 Work Permit & JSA'],['veh','🚗 Inspeksi Kendaraan'],['lap','📑 Laporan Bulanan'],['si','🦺 Safety Induction'],['umum','📌 Umum']];
+const SOPF=[['all','Semua'],['apar','APAR'],['temuan','Temuan'],['apd','APD'],['wp','Work Permit & JSA'],['veh','Kendaraan'],['lap','Laporan Bulanan'],['si','Safety Induction'],['umum','Umum']];
 const SOPX={pdf:'application/pdf',doc:'application/msword',docx:'application/vnd.openxmlformats-officedocument.wordprocessingml.document',xls:'application/vnd.ms-excel',xlsx:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',ppt:'application/vnd.ms-powerpoint',pptx:'application/vnd.openxmlformats-officedocument.presentationml.presentation',png:'image/png',jpg:'image/jpeg',jpeg:'image/jpeg'};
 let SOP_CUR='',SOP_L=[],SOP_F='all',SOP_PV='';
 {const _sm=window.switchModule,CIN0='bg-red-800/80 hover:bg-red-700 text-white px-3 py-1.5 rounded-xl text-xs font-semibold shadow transition-all duration-200 whitespace-nowrap flex items-center gap-1',CON0=CIN0.replace('bg-red-800/80 hover:bg-red-700','bg-red-700').replace('font-semibold','font-bold');
@@ -3869,7 +3890,7 @@ html.mob header h1{font-size:12px}
 html.mob input,html.mob select,html.mob textarea{font-size:16px!important}
 </style>
 <script>
-(function(){const $=id=>document.getElementById(id),MOD=/switchModule\('(apar|temuan|apd|wp|veh|lap)'\)/;
+(function(){const $=id=>document.getElementById(id),MOD=/switchModule\('(apar|temuan|apd|wp|veh|lap|si)'\)/;
  const isMob=()=>Math.min(innerWidth,screen.width)<=768;
  function mnClose(){$('mnDrawer').classList.remove('on');$('mnBack').classList.remove('on')}
  window.mnOpen=()=>{$('mnDrawer').classList.add('on');$('mnBack').classList.add('on')};
@@ -4366,9 +4387,137 @@ html:not(.mob) #navButtonsContainer>button[data-g=u]{order:2}
 html:not(.mob) #navButtonsContainer>button[data-g=m]{order:4;flex:1 1 120px;max-width:215px;justify-content:center}
 }`;
 document.head.appendChild(st);
-const MOD=/switchModule\('(apar|temuan|apd|wp|veh|lap)'\)|sopOpen\(/;
+const MOD=/switchModule\('(apar|temuan|apd|wp|veh|lap|si)'\)|sopOpen\(/;
 const tag=()=>{const c=document.getElementById('navButtonsContainer');if(!c)return;[...c.children].forEach(b=>{if(b.tagName==='BUTTON')b.dataset.g=MOD.test(b.getAttribute('onclick')||'')?'m':'u'})};
 const c=document.getElementById('navButtonsContainer');if(c){new MutationObserver(tag).observe(c,{childList:true});tag()}
+})();
+</script>
+<style>
+/* ===== Desktop (>=1024px): menu fitur jadi sidebar kiri, aksi akun di kanan atas =====
+   Awalan html:not(.mob) + #appContainer dipakai agar mengalahkan aturan menu-atas lama (display:contents, wrap, order) */
+@media (min-width:1024px){
+ html:not(.mob) #appContainer>header{box-shadow:0 6px 20px -10px rgba(127,29,29,.55)}
+ html:not(.mob) #appContainer>header>div{max-width:none!important;height:64px;padding:0 24px!important;overflow:visible!important;flex-wrap:nowrap!important;justify-content:space-between!important;align-items:center!important;row-gap:0!important}
+ html:not(.mob) #appContainer>header>div::after{display:none!important}
+ html:not(.mob) #appContainer>header>div>div:not(#navButtonsContainer){order:0!important;margin-right:0!important}
+ html:not(.mob) #appContainer #headerActions{display:flex!important;margin-left:auto}
+ html:not(.mob) #appContainer #headerActions button.hidden{display:none!important}
+ html:not(.mob) #appContainer #headerActions button{position:relative;width:38px;height:38px;padding:0!important;border-radius:9999px!important;display:inline-flex;align-items:center;justify-content:center;font-size:15px!important;background:rgba(255,255,255,.14)!important;border:1px solid rgba(255,255,255,.22)!important;color:#fff!important;box-shadow:none!important;transform:none!important;transition:background .15s;order:0!important;flex:none!important;max-width:none!important}
+ html:not(.mob) #appContainer #headerActions button:hover{background:rgba(255,255,255,.28)!important}
+ html:not(.mob) #appContainer #headerActions button[onclick="handleLogout()"]{width:auto;padding:0 16px!important;gap:6px;font-size:12px!important;font-weight:700!important;background:#fff!important;color:#b91c1c!important}
+ html:not(.mob) #appContainer #headerActions button[onclick="handleLogout()"]:hover{background:#fef2f2!important}
+
+ html:not(.mob) #appContainer #navButtonsContainer{position:fixed!important;left:0!important;top:65px!important;bottom:0!important;width:244px!important;z-index:30;display:flex!important;flex-direction:column!important;flex-wrap:nowrap!important;align-items:stretch!important;justify-content:flex-start!important;gap:4px!important;padding:16px 12px!important;background:#fff!important;border:0!important;border-right:1px solid #e2e8f0!important;border-radius:0!important;box-shadow:none!important;overflow-y:auto;overflow-x:hidden;margin:0!important}
+ html:not(.mob) #appContainer #navButtonsContainer::before{content:"Menu Utama";font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:#94a3b8;font-weight:700;padding:0 14px 6px}
+ html:not(.mob) #appContainer #navButtonsContainer::after{content:"PT Kertas Padalarang \00B7  K3LH";margin-top:auto;padding:14px 14px 0;border-top:1px solid #f1f5f9;font-size:10px;color:#94a3b8}
+ html:not(.mob) #appContainer #navButtonsContainer>button{border:0!important;width:100%!important;max-width:none!important;flex:0 0 auto!important;order:0!important;display:flex!important;align-items:center!important;justify-content:flex-start!important;text-align:left;gap:10px!important;padding:10px 14px!important;border-radius:12px!important;font-size:13px!important;font-weight:600!important;background:transparent!important;color:#475569!important;box-shadow:none!important;transform:none!important;white-space:normal!important;transition:background .15s,color .15s}
+ html:not(.mob) #appContainer #navButtonsContainer>button:hover{background:#f1f5f9!important;color:#0f172a!important}
+ html:not(.mob) #appContainer #navButtonsContainer>button.bg-red-700,html:not(.mob) #appContainer #navButtonsContainer>button.bg-red-700:hover{background:linear-gradient(135deg,#dc2626,#991b1b)!important;color:#fff!important;font-weight:700!important;box-shadow:0 8px 16px -8px rgba(185,28,28,.7)!important}
+
+ html:not(.mob) #appContainer>main{max-width:none!important;margin-left:244px!important;margin-right:0!important;padding:0 32px!important}
+}
+</style>
+<style>
+/* ===== Header halaman sebelum login: satu baris rapi, Login di kanan (menimpa aturan menu-atas lama) ===== */
+@media (min-width:769px){
+ html:not(.mob) #loginPage>header>div{flex-wrap:nowrap!important;justify-content:space-between!important;align-items:center!important;row-gap:0!important;height:64px;padding-top:0!important;padding-bottom:0!important}
+ html:not(.mob) #loginPage>header>div::after{display:none!important}
+ html:not(.mob) #loginPage>header>div>div:not(#navButtonsContainer){order:0!important;margin-right:0!important}
+ html:not(.mob) #loginPage>header>div>button{order:0!important;margin-left:auto;flex:none}
+}
+</style>
+<style>
+/* Maskot pemadam: latar putih GIF dibuat transparan (multiply: putih menyatu dengan halaman) */
+.mascot-wrap{mix-blend-mode:multiply}
+.mascot-wrap img{background:transparent}
+/* Desktop: maskot pindah ke kiri bawah (di samping sidebar). Mobile tetap di kanan bawah */
+@media (min-width:1024px){
+ html:not(.mob) .mascot-wrap{right:auto!important;left:256px!important;bottom:14px!important;align-items:flex-start!important}
+}
+</style>
+<style>@keyframes sib{50%{opacity:.12}}.si-blink{animation:sib .9s infinite}#siPad{touch-action:none;background:#fff;border:2px dashed #cbd5e1;border-radius:12px;width:100%;height:130px;cursor:crosshair}</style>
+<script>
+(()=>{
+const $=id=>document.getElementById(id),E=s=>String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const pad=n=>String(n).padStart(2,'0');
+const dt=s=>{const d=new Date(s);return isNaN(d)?'-':`${pad(d.getDate())}/${pad(d.getMonth()+1)}/${d.getFullYear()} ${pad(d.getHours())}.${pad(d.getMinutes())} WIB`};
+const dd=s=>{const d=new Date(s);return isNaN(d)?'-':`${pad(d.getDate())}/${pad(d.getMonth()+1)}/${d.getFullYear()}`};
+const post=async p=>{const r=await(await fetch(SCRIPT_URL,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify({...p,token:localStorage.getItem('wpTok')||''})})).json();if(r.ok===undefined)throw new Error('Server belum diperbarui. Tempel Code.gs terbaru lalu Deploy > New version.');if(!r.ok&&/Sesi/.test(r.msg||'')){setTimeout(()=>{alert('Sesi berakhir. Silakan login kembali.');handleLogout()},200)}if(!r.ok)throw new Error(r.msg||'Gagal.');return r};
+const toast=(m,ok=1)=>{const t=document.createElement('div');t.className='fixed top-16 left-1/2 -translate-x-1/2 z-[120] text-white text-xs rounded-xl shadow-2xl px-4 py-2.5 '+(ok?'bg-emerald-700':'bg-red-700');t.textContent=m;document.body.appendChild(t);setTimeout(()=>t.remove(),3800)};
+const badge=o=>o.status==='lewat'&&o.cv?`<span class="font-bold text-red-600">Kedaluwarsa (anggota sesi ini)</span>`:o.status==='lewat'?`<span class="si-blink font-extrabold text-red-600">⚠ KEDALUWARSA (lewat ${-o.sisa} hari) — wajib induction ulang</span>`:o.status==='segera'?`<span class="font-bold text-amber-600">⏳ Berakhir ${o.sisa} hari lagi</span>`:o.status==='diperbarui'?`<span class="text-slate-400">Sudah diperbarui</span>`:`<span class="font-bold text-emerald-600">✔ Berlaku (${o.sisa} hari lagi)</span>`;
+const stat=(l,v,c)=>`<div class="rounded-xl border p-3 text-center ${c}"><p class="font-semibold">${l}</p><p class="text-xl font-bold">${v}</p></div>`;
+const cnt=(L,k)=>L.filter(o=>o.status===k).length;
+
+/* ---------- dashboard sebelum login (hanya nama perusahaan, tanpa peserta/telepon) ---------- */
+async function pubLoad(){const b=$('pubSi');if(!b)return;try{const r=await(await fetch(SCRIPT_URL,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify({action:'wpSiPub'})})).json();if(!r.ok)throw 0;const L=r.list;
+ $('pubSiStat').innerHTML=stat('Masih Berlaku',cnt(L,'aktif'),'bg-emerald-50 border-emerald-200 text-emerald-700')+stat('Segera Berakhir',cnt(L,'segera'),'bg-amber-50 border-amber-200 text-amber-700')+stat('Kedaluwarsa',cnt(L,'lewat'),'bg-red-50 border-red-200 text-red-700');
+ b.innerHTML=L.length?L.map((o,i)=>`<tr class="border-t ${o.status==='lewat'?'bg-red-50':''}"><td class="px-2 py-2">${i+1}</td><td class="px-2 py-2 font-semibold">${E(o.nama)}</td><td class="px-2 py-2">${E(o.kategori)}</td><td class="px-2 py-2">${dt(o.waktu)}</td><td class="px-2 py-2">${dd(o.exp)}</td><td class="px-2 py-2 text-center">${o.orang}</td><td class="px-2 py-2">${badge(o)}</td></tr>`).join(''):'<tr><td colspan="7" class="px-2 py-6 text-center text-slate-400">Belum ada data safety induction.</td></tr>'}catch(e){b.innerHTML='<tr><td colspan="7" class="px-2 py-6 text-center text-slate-400">Data belum tersedia.</td></tr>'}}
+pubLoad();setInterval(()=>{if(!document.hidden&&!$('loginPage').classList.contains('hidden'))pubLoad()},60000);
+
+/* ---------- modul admin ---------- */
+let L=[],Q='',F='all',CUR=null;
+const mount=()=>{if($('modulSi'))return;const w=$('modulWp');if(w)w.insertAdjacentHTML('afterend','<div id="modulSi" class="hidden space-y-4"></div>')};
+async function enter(){mount();$('modulSi').innerHTML='<p class="text-center text-slate-500 py-10 text-xs">Memuat data safety induction…</p>';try{L=(await post({action:'wpSiList'})).list;draw()}catch(e){$('modulSi').innerHTML=`<p class="text-center text-red-600 py-10 text-xs">${E(e.message)}</p>`}}
+function draw(){const q=Q.toLowerCase(),V=L.filter(o=>(F==='all'||o.status===F)&&(!q||o.nama.toLowerCase().includes(q)||(o.pn||'').includes(q)));
+ const ch=(k,l)=>`<button onclick="siFilter('${k}')" class="px-3 py-1.5 rounded-xl text-xs font-semibold border ${F===k?'bg-red-700 text-white border-red-700':'bg-white text-slate-600'}">${l}</button>`;
+ $('modulSi').innerHTML=`<div class="bg-white rounded-2xl shadow-lg p-4 md:p-6 border border-slate-100 space-y-4 text-xs">
+ <div class="flex flex-wrap justify-between items-center gap-2 border-b pb-3"><div><h2 class="text-sm md:text-lg font-bold text-slate-900">🦺 Safety Induction</h2><p class="text-[11px] text-slate-500">Waktu & tanggal tercatat otomatis. Masa berlaku 6 bulan sesuai SOP — setelah itu status berubah merah berkedip.</p></div>
+ <div class="flex gap-2"><button onclick="siNew()" class="px-3.5 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold shadow">➕ Induction Baru</button></div></div>
+ <div class="grid grid-cols-2 md:grid-cols-4 gap-3">${stat('Total Tercatat',L.filter(o=>o.status!=='diperbarui').length,'bg-slate-50 text-slate-700')}${stat('Masih Berlaku',cnt(L,'aktif'),'bg-emerald-50 border-emerald-200 text-emerald-700')}${stat('Segera Berakhir (≤30 hari)',cnt(L,'segera'),'bg-amber-50 border-amber-200 text-amber-700')}${stat('Kedaluwarsa',cnt(L,'lewat'),'bg-red-50 border-red-200 text-red-700')}</div>
+ <div class="flex flex-wrap gap-2 items-center"><input id="siQ" value="${E(Q)}" oninput="siSearch(this.value)" placeholder="Cari perusahaan / nama peserta…" class="px-3 py-2 border rounded-xl w-full md:w-72 outline-none focus:ring-2 focus:ring-red-500">${ch('all','Semua')}${ch('aktif','Berlaku')}${ch('segera','Segera berakhir')}${ch('lewat','Kedaluwarsa')}</div>
+ <div class="table-container border rounded-xl"><table class="w-full min-w-[820px]"><thead class="bg-slate-900 text-white"><tr><th class="p-2 text-left">No</th><th class="p-2 text-left">Tanggal &amp; Waktu</th><th class="p-2 text-left">Kategori</th><th class="p-2 text-left">Nama Tamu / Perusahaan</th><th class="p-2 text-center" title="peserta yang belum diinduksi ulang / total">Peserta</th><th class="p-2 text-left">Berlaku s.d.</th><th class="p-2 text-left">Status</th><th class="p-2 text-left">Petugas</th><th class="p-2 text-center">Aksi</th></tr></thead><tbody>${V.length?V.map((o,i)=>`<tr class="border-t ${o.status==='lewat'?'bg-red-50':''}"><td class="p-2">${i+1}</td><td class="p-2">${dt(o.waktu)}</td><td class="p-2">${E(o.kategori)}</td><td class="p-2 font-semibold">${E(o.nama)}</td><td class="p-2 text-center">${o.status==='diperbarui'?o.n:o.na+'/'+o.n}</td><td class="p-2">${dd(o.exp)}</td><td class="p-2">${badge(o)}</td><td class="p-2">${E(o.petugas)}</td><td class="p-2 text-center whitespace-nowrap"><button onclick="siDetail('${o.id}')" class="px-2 py-1 rounded-lg bg-slate-100 hover:bg-slate-200 font-semibold">Detail</button>${o.status!=='diperbarui'?` <button onclick="siNew('${o.id}')" class="px-2 py-1 rounded-lg bg-red-100 text-red-700 font-bold" title="Perusahaan ini datang lagi (anggota sama atau berbeda)">➕ Sesi baru</button>`:''}</td></tr>`).join(''):'<tr><td colspan="9" class="p-6 text-center text-slate-400">Belum ada data.</td></tr>'}</tbody></table></div></div>`;
+ const i=$('siQ');if(i&&Q){i.focus();i.setSelectionRange(Q.length,Q.length)}}
+window.siFilter=k=>{F=k;draw()};window.siSearch=v=>{Q=v;draw()};
+
+/* ---------- modal ---------- */
+const modal=h=>{let m=$('siModal');if(!m){m=document.createElement('div');m.id='siModal';m.className='fixed inset-0 z-[100] bg-black/60 flex items-start md:items-center justify-center p-3 overflow-y-auto';document.body.appendChild(m)}m.innerHTML=`<div class="bg-white w-full max-w-xl rounded-2xl shadow-2xl p-5 text-xs space-y-3 relative my-4">${h}</div>`;m.classList.remove('hidden')};
+window.siClose=()=>{const m=$('siModal');if(m)m.classList.add('hidden')};
+const ip='w-full border rounded-lg px-2.5 py-2 outline-none focus:ring-2 focus:ring-red-500',lb='block font-semibold text-slate-600 mb-1';
+const row=(n='',t='')=>`<div class="siR grid grid-cols-[1fr_9rem_auto] gap-2"><input class="${ip} siN" placeholder="Nama lengkap" value="${E(n)}"><input class="${ip} siT" type="tel" placeholder="No. telepon" value="${E(t)}"><button type="button" onclick="siDelRow(this)" class="px-2 rounded-lg bg-slate-100 hover:bg-red-100 text-slate-500" title="Hapus baris">✕</button></div>`;
+window.siAddRow=()=>$('siPes').insertAdjacentHTML('beforeend',row());
+window.siDelRow=b=>{if(document.querySelectorAll('.siR').length>1)b.closest('.siR').remove()};
+window.siLbl=()=>{const k=$('siKat').value;$('siNamaL').textContent=k==='Tamu'?'Nama Tamu / Perusahaan / Instansi *':k==='OS Baru'?'Nama Perusahaan Outsourcing *':'Departemen / Seksi *'};
+let clk=0;
+window.siNew=id=>{const pre=id?L.find(o=>o.id===id):null;
+ modal(`<button onclick="siClose()" class="absolute top-3 right-3 w-8 h-8 rounded-full bg-slate-100 hover:bg-slate-200 font-bold">✕</button><h3 class="font-bold text-sm">🦺 Form Safety Induction${pre?' (induction ulang)':''}</h3>
+ <div class="bg-slate-50 border rounded-xl px-3 py-2 flex justify-between"><span class="text-slate-500">Tanggal &amp; waktu (otomatis)</span><b id="siClk"></b></div>
+ <div class="grid md:grid-cols-2 gap-2"><div><label class="${lb}">Kategori *</label><select id="siKat" onchange="siLbl()" class="${ip}"><option>Tamu</option><option>Karyawan Baru</option><option>OS Baru</option></select></div><div><label id="siNamaL" class="${lb}"></label><datalist id="siCo">${[...new Set(L.map(o=>o.nama))].map(n=>`<option value="${E(n)}">`).join('')}</datalist><input id="siNama" list="siCo" class="${ip}" placeholder="mis. PT Maju Jaya" value="${E(pre?pre.nama:'')}"></div></div>
+ <div><label class="${lb}">Daftar hadir (nama lengkap &amp; nomor telepon yang dapat dihubungi) *</label><div id="siPes" class="space-y-2">${row()}</div><button type="button" onclick="siAddRow()" class="mt-2 px-3 py-1.5 rounded-lg bg-slate-100 hover:bg-slate-200 font-semibold">➕ Tambah peserta</button><p class="text-[10px] text-slate-400 mt-1">Perusahaan yang sudah pernah induction boleh membawa anggota berbeda: isi hanya peserta yang hadir hari ini. Masa berlaku dihitung per orang. Data peserta &amp; telepon hanya terlihat admin.</p></div>
+ <div><div class="flex justify-between items-center"><label class="${lb}">Tanda tangan / paraf perwakilan *</label><button type="button" onclick="siPadClear()" class="text-red-600 font-semibold">Hapus</button></div><canvas id="siPad"></canvas></div>
+ <div><label class="${lb}">Catatan (opsional)</label><input id="siCat" class="${ip}" maxlength="300"></div>
+ <button id="siSave" onclick="siSave()" class="w-full py-2.5 rounded-xl bg-gradient-to-r from-red-600 to-red-700 text-white font-bold shadow">Simpan Safety Induction</button>`);
+ if(pre)$('siKat').value=pre.kategori;siLbl();
+ const tick=()=>{const c=$('siClk');if(!c||$('siModal').classList.contains('hidden'))return;c.textContent=dt(new Date());clk=setTimeout(tick,1000)};clearTimeout(clk);tick();
+ const c=$('siPad'),x=c.getContext('2d');c.width=320;c.height=130;x.lineWidth=2.2;x.lineCap='round';x.strokeStyle='#0f172a';let dr=false,dirty=false;
+ const pt=e=>{const r=c.getBoundingClientRect();return[(e.clientX-r.left)*c.width/r.width,(e.clientY-r.top)*c.height/r.height]};
+ c.onpointerdown=e=>{dr=true;c.setPointerCapture(e.pointerId);const[a,b]=pt(e);x.beginPath();x.moveTo(a,b);e.preventDefault()};
+ c.onpointermove=e=>{if(!dr)return;const[a,b]=pt(e);x.lineTo(a,b);x.stroke();dirty=true};c.onpointerup=c.onpointercancel=()=>{dr=false};
+ window.siPadClear=()=>{x.clearRect(0,0,c.width,c.height);dirty=false};window.siPadDirty=()=>dirty};
+window.siSave=async()=>{const ps=[...document.querySelectorAll('.siR')].map(r=>({nama:r.querySelector('.siN').value.trim(),telp:r.querySelector('.siT').value.trim()}));
+ if($('siNama').value.trim().length<2)return toast('Nama tamu / perusahaan wajib diisi.',0);
+ for(let i=0;i<ps.length;i++)if(ps[i].nama.length<2||ps[i].telp.replace(/\D/g,'').length<6)return toast(`Peserta #${i+1}: nama lengkap & nomor telepon wajib diisi.`,0);
+ if(!siPadDirty())return toast('Tanda tangan / paraf perwakilan wajib diisi.',0);
+ const b=$('siSave');b.disabled=true;b.textContent='Menyimpan…';
+ try{await post({action:'wpSiAdd',kategori:$('siKat').value,nama:$('siNama').value.trim(),peserta:ps,paraf:$('siPad').toDataURL('image/png'),catatan:$('siCat').value.trim()});siClose();toast('✅ Safety induction tersimpan.');enter()}catch(e){toast(e.message,0);b.disabled=false;b.textContent='Simpan Safety Induction'}};
+window.siDetail=async id=>{const o=L.find(x=>x.id===id);if(!o)return;modal('<p class="text-center text-slate-500 py-8">Memuat…</p>');
+ try{const r=await post({action:'wpSiGet',id});CUR={o,r};
+ modal(`<button onclick="siClose()" class="absolute top-3 right-3 w-8 h-8 rounded-full bg-slate-100 hover:bg-slate-200 font-bold">✕</button><h3 class="font-bold text-sm">${E(o.nama)}</h3>
+ <p class="text-slate-500">${E(o.kategori)} · ${dt(o.waktu)} · berlaku s.d. ${dd(o.exp)}</p><p>${badge(o)}</p>
+ <table class="w-full border"><thead class="bg-slate-100"><tr><th class="p-1.5 text-left">No</th><th class="p-1.5 text-left">Nama Lengkap</th><th class="p-1.5 text-left">No. Telepon</th><th class="p-1.5 text-left">Status</th></tr></thead><tbody>${r.peserta.map((p,i)=>`<tr class="border-t"><td class="p-1.5">${i+1}</td><td class="p-1.5">${E(p.nama)}</td><td class="p-1.5">${E(p.telp)}</td><td class="p-1.5">${p.ulang?'<span class="text-slate-400">Sudah induction ulang '+dd(p.ulang)+'</span>':badge(o)}</td></tr>`).join('')}</tbody></table>
+ <div><p class="font-semibold text-slate-600 mb-1">Paraf perwakilan</p><img src="${E(r.paraf)}" class="border rounded-lg h-24 bg-white"></div>${r.catatan?`<p><b>Catatan:</b> ${E(r.catatan)}</p>`:''}<p class="text-slate-400">Petugas: ${E(o.petugas)}</p>
+ <div class="flex gap-2"><button onclick="siPrint()" class="flex-1 py-2 rounded-xl bg-slate-900 text-white font-bold">🖨️ Cetak Daftar Hadir</button><button onclick="siDel('${o.id}')" class="py-2 px-4 rounded-xl bg-red-100 text-red-700 font-bold">Hapus</button></div>`)}catch(e){siClose();toast(e.message,0)}};
+window.siDel=async id=>{if(!confirm('Hapus data safety induction ini? Tindakan tidak dapat dibatalkan.'))return;try{await post({action:'wpSiDel',id});siClose();toast('Data dihapus.');enter()}catch(e){toast(e.message,0)}};
+window.siPrint=()=>{if(!CUR)return;const{o,r}=CUR,w=window.open('','_blank');if(!w)return toast('Popup diblokir.',0);
+ w.document.write(`<!DOCTYPE html><html><head><meta charset="utf-8"><title>Daftar Hadir Safety Induction</title><style>body{font-family:Arial;font-size:12px;padding:16mm}table{border-collapse:collapse;width:100%}td,th{border:1px solid #000;padding:6px 8px}th{background:#e5e5e5}.np button{padding:8px 16px;background:#b91c1c;color:#fff;border:0;border-radius:6px;font-weight:bold}@media print{.np{display:none}}</style></head><body><div class="np"><button onclick="print()">🖨️ Cetak</button></div><h3 style="text-align:center">DAFTAR HADIR SAFETY INDUCTION<br>PT KERTAS PADALARANG</h3><p>Kategori: <b>${E(o.kategori)}</b><br>Nama / Perusahaan: <b>${E(o.nama)}</b><br>Tanggal &amp; waktu: ${dt(o.waktu)}<br>Berlaku s.d.: ${dd(o.exp)}</p><table><tr><th style="width:40px">No</th><th>Nama Lengkap</th><th>No. Telepon</th></tr>${r.peserta.map((p,i)=>`<tr><td>${i+1}</td><td>${E(p.nama)}</td><td>${E(p.telp)}</td></tr>`).join('')}</table><div style="margin-top:30px;float:right;text-align:center">Perwakilan,<br><img src="${E(r.paraf)}" style="height:70px"><br>( ${E(o.nama)} )</div></body></html>`);w.document.close()};
+
+/* ---------- navigasi (membungkus switchModule yang sudah ada) ---------- */
+const MODS=['modulApar','modulTemuan','modulApd','modulLocked','modulProfile','modulWp','modulSop','modulVeh','modulLap'];
+const CIN='bg-red-800/80 hover:bg-red-700 text-white px-3 py-1.5 rounded-xl text-xs font-semibold shadow transition-all duration-200 whitespace-nowrap flex items-center gap-1',CON=CIN.replace('bg-red-800/80 hover:bg-red-700','bg-red-700').replace('font-semibold','font-bold');
+const SM=window.switchModule;
+window.switchModule=function(m){mount();const ms=$('modulSi');
+ if(m==='si'){if(!currentUser||currentUser.role!=='admin')return;MODS.forEach(i=>{const e=$(i);if(e)e.classList.add('hidden')});ms.classList.remove('hidden');window.SOP_PREV='si';
+  document.querySelectorAll('#navButtonsContainer button').forEach(b=>{if(b.id!=='navProfile'&&/switchModule\(|sopOpen\(/.test(b.getAttribute('onclick')||''))b.className=CIN});const nb=$('navSi');if(nb)nb.className=CON;enter();return}
+ if(ms)ms.classList.add('hidden');const nb=$('navSi');if(nb)nb.className=CIN;return SM.apply(this,arguments)};
 })();
 </script>
 </body>
